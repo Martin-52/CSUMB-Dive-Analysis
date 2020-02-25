@@ -18,6 +18,17 @@
         <mainClass>org.mbari.m3.dive.visualizer.Main</mainClass>
     </properties>
 
+    <repositories>
+      <repository>
+        <snapshots>
+          <enabled>false</enabled>
+        </snapshots>
+        <id>bintray-org-mbari-maven</id>
+        <name>bintray</name>
+        <url>https://dl.bintray.com/org-mbari/maven</url>
+      </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>io.helidon.webserver</groupId>
@@ -26,6 +37,12 @@
         <dependency>
             <groupId>io.helidon.config</groupId>
             <artifactId>helidon-config-yaml</artifactId>
+        </dependency>
+        <dependency>
+        	<groupId>org.mbari</groupId>
+        	<artifactId>expd-jdbc</artifactId>
+        	<version>1.5.3.jre11</version>
+        	<type>pom</type>
         </dependency>
     </dependencies>
 
@@ -39,6 +56,14 @@
                         <id>copy-libs</id>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+		          <source>11</source>
+		          <target>11</target>
+              </configuration>
             </plugin>
         </plugins>
     </build>

@@ -68,7 +68,7 @@ public final class Main {
     private static Routing createRouting(Config config) {
 
         return Routing.builder()
-                .register("/example", new ExampleService())
+                .register("/dive", new ExampleService())
                 .build();
     }
 }
