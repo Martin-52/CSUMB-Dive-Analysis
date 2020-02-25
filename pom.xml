@@ -42,7 +42,6 @@
         	<groupId>org.mbari</groupId>
         	<artifactId>expd-jdbc</artifactId>
         	<version>1.5.3.jre11</version>
-        	<type>pom</type>
         </dependency>
     </dependencies>
 

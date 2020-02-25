@@ -21,15 +21,12 @@ public class ExampleService implements Service {
         String rov = request.path().param("rov");
         Integer diveNumber = Integer.parseInt(request.path().param("diveNumber"));
         
-//        DiveDAO dao = new DiveDAOImpl();
-//        Dive dive = dao.findByPlatformAndDiveNumber(diveNumber, 123);
+        DiveDAO dao = new DiveDAOImpl();
         
         
         String msg = String.format("Returning result for: %s %d!", rov, diveNumber);
 
         
         response.send(msg);
-        
-        //response.send(dive);
     }
 }
