@@ -14,7 +14,7 @@ import org.json.simple.JSONObject;
 
 public class DiveService implements Service {
 
-    @Override
+    @Override // this is called everytime this path is accessed
     public void update(Routing.Rules rules) {
         rules
             .get("/{rov}", this::getRovDives);
@@ -31,7 +31,8 @@ public class DiveService implements Service {
         Collection<Dive> divesForRov = dao.findByPlatform(rov);
         JSONObject json = new JSONObject();
         json.put("Dives", divesForRov);
+        System.out.println(divesForRov.toArray()[0]);
         
-        response.send(json.toJSONString());
+        response.send(json.toJSONString());// this sends back
     }
 }

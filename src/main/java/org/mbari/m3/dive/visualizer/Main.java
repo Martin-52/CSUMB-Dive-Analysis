@@ -9,6 +9,9 @@ import io.helidon.webserver.WebServer;
 
 /**
  * The application main class.
+ * mvn package
+ * java -jar target/dive-video-visualizer.jar
+ * 
  */
 public final class Main {
 
@@ -69,6 +72,7 @@ public final class Main {
 
         return Routing.builder()
                 .register("/dive", new DiveService())
+                .register("/annotations", new DiveAnnotationService())
                 .build();
     }
 }
