@@ -19,6 +19,10 @@ import org.mbari.expd.DiveDAO;
 import org.mbari.expd.jdbc.DiveDAOImpl;
 import org.json.simple.JSONObject;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import io.helidon.webserver.Routing;
 
 public class DiveAnnotationService implements Service {
@@ -44,25 +48,41 @@ public class DiveAnnotationService implements Service {
      * @throws InterruptedException
      * @throws IOException
      */
-    private void getRovDiveAnnotations(ServerRequest request, ServerResponse response)
-            throws IOException, InterruptedException {
-    String rovname = "";
-    String rovgiven = request.path().param("rov");
-    Integer i = 0;
-    for(; i < rovgiven.length(); i++) {
-        if(rovgiven.charAt(i)==' '){
-            break;
+    private void getRovDiveAnnotations(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
+        String rovname = "";
+        String rovgiven = request.path().param("rov");
+        Integer i = 0;
+        for(; i < rovgiven.length(); i++) {
+            if(rovgiven.charAt(i)==' '){
+                break;
+            }
+            rovname+=rovgiven.charAt(i);
         }
-        rovname+=rovgiven.charAt(i);
-    }
 
-    i+=1;
-    String divenumber = "";
-    for(; i < rovgiven.length(); i++) {
-        divenumber+=rovgiven.charAt(i);
-    }
-    Integer result = Integer.parseInt(divenumber);
-    //System.out.println(rovname + ":" + result + "!!");
-    AnnotationServiceHelper getAnnos = new AnnotationServiceHelper(rovname, result);
+        i+=1;
+        String divenumber = "";
+        for(; i < rovgiven.length(); i++) {
+            divenumber+=rovgiven.charAt(i);
+        }
+        Integer result = Integer.parseInt(divenumber);
+        //System.out.println(rovname + ":" + result + "!!");
+        AnnotationServiceHelper annotationServiceClass = new AnnotationServiceHelper(rovname, result);
+        // JsonArray annotations = annotationServiceClass.getAnnotations();// get json array from class
+        // System.out.println(annotations.toString());
+        // String anno = annotations.toString();// convert to string
+        // JsonArray ans = new JsonParser().parse(anno).getAsJsonArray(); // can turn it back once sent
+        // System.out.println(ans);
+
+        
+
+
+        // JsonArray vsjson = new JsonParser().parse('enter json string here').getAsJsonArray(); // can turn it back to JsonArray 
+        // System.out.println(vsjson.get(0));
+        // System.out.println(vsjson.get(1));
+        // System.out.println(vsjson.get(2));
+
+
+        JsonArray vids = annotationServiceClass.getVideoLinks();
+        response.send(vids.toString());
     }
 }

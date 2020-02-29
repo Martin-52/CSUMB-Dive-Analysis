@@ -30,14 +30,21 @@ import io.helidon.webserver.Routing;
 
 public class AnnotationServiceHelper {
 
-    AnnotationServiceHelper(String rov,Integer number) throws IOException, InterruptedException {
-        //AnnotationServiceHelper obj = new AnnotationServiceHelper();
-        this.sendGET(rov, number);
-    }
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_2)
             .build();
+
+    // private HttpResponse<String> response;
+    private JsonObject allAnnotationData;
+
+
+
+    AnnotationServiceHelper(String rov,Integer number) throws IOException, InterruptedException {
+        // when initialized, this.sendGET() will get the entire json tree needed
+        this.sendGET(rov, number);
+    }
+
 
 
     private void sendGET(String rov, Integer number) throws IOException, InterruptedException {
@@ -48,66 +55,86 @@ public class AnnotationServiceHelper {
                 .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
                 .build();
 
-
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
 
         // I am using gson. First i get the entire json object. then i get the annotations list from within the json tree.
         // the annotations list contains an annotation of what the user saw from within a 15 min chunk of video. that video is 
         // referenced within the annotation.
+        this.allAnnotationData = new JsonParser().parse(response.body()).getAsJsonObject();
+    }
 
-        JsonObject jsonObject = new JsonParser().parse(response.body()).getAsJsonObject();
-        
-        JsonArray annotations = jsonObject.getAsJsonArray("annotations");
-           
-        // first 15 minute video chunk (first annotation video reference uuid).
-        String observationUUID = annotations.get(0).getAsJsonObject().get("observation_uuid").toString();
-        String videoReferenceUUID = annotations.get(0).getAsJsonObject().get("video_reference_uuid").toString();
+    public JsonArray getAnnotations(){
+        if(this.allAnnotationData.isJsonNull()) {
+            System.out.println("EMPTY ANNOTATION TREE");
+            return null;
+        }
+        return allAnnotationData.getAsJsonArray("annotations");
+    }
 
-        JsonArray media = jsonObject.getAsJsonArray("media");
-        String videoUUID = "";
-        String videoLink = "";
-
-
+    public JsonArray getVideoLinks(){
+        if(this.allAnnotationData.isJsonNull()) {
+            System.out.println("EMPTY ANNOTATION TREE");
+            return null;
+        }
+        JsonArray allDiveVideos = new JsonArray();
+        // All videos in tree
+        JsonArray media = allAnnotationData.getAsJsonArray("media"); 
         for(int i = 0;i < media.size(); i++){
-            if(media.get(i).getAsJsonObject().get("video_reference_uuid").toString().equals(videoReferenceUUID)){
-                // get mp4 uuid
-                videoUUID = media.get(i).getAsJsonObject().get("video_uuid").toString();
-                
+            String uri = media.get(i).getAsJsonObject().get("uri").toString();
+            if(uri.charAt(uri.length()-2)=='4'){//checks last char is a '4' and not 'm'
+                allDiveVideos.add(media.get(i).getAsJsonObject().get("uri").toString());
             }
         }
+        return allDiveVideos;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+//     JsonArray annotations = allAnnotationData.getAsJsonArray("annotations");
+// String videoUUID = "";
+// String videoLink = "";
+
+
+        // first 15 minute video chunk (first annotation video reference uuid).
+        // String observationUUID = annotations.get(0).getAsJsonObject().get("observation_uuid").toString();
+        // String videoReferenceUUID = annotations.get(0).getAsJsonObject().get("video_reference_uuid").toString();
+
+        // for(int i = 0;i < media.size(); i++){
+        //     if(media.get(i).getAsJsonObject().get("video_reference_uuid").toString().equals(videoReferenceUUID)){
+        //         // get mp4 uuid
+        //         videoUUID = media.get(i).getAsJsonObject().get("video_uuid").toString();
+                
+        //     }
+        // }
 
 
         // the media lists seems to be in some order. Each mov seems to be followed by its mp4 varient. but to be sure it is the correct
         // video, im going to loop through the media again.
-        for(int i = 0;i < media.size(); i++){
-            if(media.get(i).getAsJsonObject().get("video_uuid").toString().equals(videoUUID)){
-                String uri = media.get(i).getAsJsonObject().get("uri").toString();
-                if(uri.charAt(uri.length()-2)=='4'){//checks last char is a '4' and not 'm'
-                    videoLink = media.get(i).getAsJsonObject().get("uri").toString();
-                }
-            }
-        }
+        // for(int i = 0;i < media.size(); i++){
+        //     if(media.get(i).getAsJsonObject().get("video_uuid").toString().equals(videoUUID)){
+        //         String uri = media.get(i).getAsJsonObject().get("uri").toString();
+        //         if(uri.charAt(uri.length()-2)=='4'){//checks last char is a '4' and not 'm'
+        //             videoLink = media.get(i).getAsJsonObject().get("uri").toString();
+        //         }
+        //     }
+        // }
 
 
         // THIS IS AN EXAMPLE. THIS GETS THE FIRST ANNOTATION VIDEO
-        System.out.println("==================");
+        // System.out.println("==================");
         // gson JsonArray functions: https://www.javadoc.io/doc/com.google.code.gson/gson/2.6.2/com/google/gson/JsonArray.html
-        System.out.println("annotation uuid: " + observationUUID);
-        System.out.println("video uuid: " + videoUUID);
-        System.out.println("video link (uri): " + videoLink);
-        System.out.println("==================");
-
-
-        // THIS IS AN EXAMPLE. THIS GETS ALL VIDEOS FROM THIS DIVE
-        System.out.println("=All Videos From This Dive=");
-        for(int i = 0;i < media.size(); i++){
-            String uri = media.get(i).getAsJsonObject().get("uri").toString();
-            if(uri.charAt(uri.length()-2)=='4'){//checks last char is a '4' and not 'm'
-                System.out.println("video link: " + media.get(i).getAsJsonObject().get("uri").toString());
-            }
-        }
-        System.out.println("==================");
-
-    }
-}
+        // System.out.println("annotation uuid: " + observationUUID);
+        // System.out.println("video uuid: " + videoUUID);
+        // System.out.println("video link (uri): " + videoLink);
+        // System.out.println("==================");
