@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.mbari.expd.Dive;
 import org.mbari.expd.DiveDAO;
@@ -20,6 +21,7 @@ import org.mbari.expd.jdbc.DiveDAOImpl;
 import org.json.simple.JSONObject;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -81,8 +83,79 @@ public class DiveAnnotationService implements Service {
         // System.out.println(vsjson.get(1));
         // System.out.println(vsjson.get(2));
 
+        JsonObject linksAndAnnotations = annotationServiceClass.getVideoLinksAndAnnotations();
+        System.out.println("************************************************************************************");
+        for(Map.Entry<String,JsonElement> entry : linksAndAnnotations.entrySet()){
+    
+            
+            System.out.println("Video Link: " + entry.getKey());
+            if(entry.getValue().getAsJsonArray().size()==0){
+                System.out.println("No Annotations");
+                System.out.println("************************************************************************************");
+                continue;
+            }
+            
+            // this will loop through each annotation
+            for(int j = 0; j < entry.getValue().getAsJsonArray().size(); j++){
+                System.out.println("Video Annotation " + (j+1));
+                System.out.println(entry.getValue().getAsJsonArray().get(j));
+                System.out.println("");
+            }
+            System.out.println("************************************************************************************");
+        }
 
-        JsonArray vids = annotationServiceClass.getVideoLinks();
-        response.send(vids.toString());
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+
+        String vaa = linksAndAnnotations.toString();
+        System.out.println(vaa);
+
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+
+        JsonObject ans = new JsonParser().parse(vaa).getAsJsonObject();
+        System.out.println("************************************************************************************");
+        for(Map.Entry<String,JsonElement> entry : ans.entrySet()){
+    
+            
+            System.out.println("Video Link: " + entry.getKey());
+            if(entry.getValue().getAsJsonArray().size()==0){
+                System.out.println("No Annotations");
+                System.out.println("************************************************************************************");
+                continue;
+            }
+            
+            // this will loop through each annotation
+            for(int j = 0; j < entry.getValue().getAsJsonArray().size(); j++){
+                System.out.println("Video Annotation " + (j+1));
+                System.out.println(entry.getValue().getAsJsonArray().get(j));
+                System.out.println("");
+            }
+            System.out.println("************************************************************************************");
+        }
+
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+
+        //System.out.println()
+
+                
+        //JsonArray vids = annotationServiceClass.getVideoLinks();
+        response.send(linksAndAnnotations.toString());
     }
 }
