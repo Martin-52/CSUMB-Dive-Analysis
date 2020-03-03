@@ -140,7 +140,11 @@ public class DiveAnnotationService implements Service {
         return (new JsonParser().parse(response.body()).getAsJsonObject());
     }
 
-    //
+    
+    /**
+    * Returns a JsonArray of all Annotations from specific dive
+    * @param allAnnotationData
+    */
     private JsonArray getAnnotations(JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
             System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.getAnnotations()");
@@ -149,7 +153,10 @@ public class DiveAnnotationService implements Service {
         return allAnnotationData.getAsJsonArray("annotations");
     }
 
-    //
+    /**
+    * Returns a JsonArray of all Media (includes video links) from specific dive
+    * @param allAnnotationData
+    */
     private JsonArray getMedia(JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
             System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.getMedia()");
@@ -158,6 +165,11 @@ public class DiveAnnotationService implements Service {
         return allAnnotationData.getAsJsonArray("media");
     }
 
+
+    /**
+    * Returns a JsonArray of all Video Links from 'Media' for specific dive
+    * @param allAnnotationData
+    */
     private JsonArray getVideoLinks(JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
             System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.getVideoLinks()");
