@@ -9,9 +9,6 @@ import io.helidon.webserver.WebServer;
 
 /**
  * The application main class.
- * mvn package
- * java -jar target/dive-video-visualizer.jar
- * 
  */
 public final class Main {
 

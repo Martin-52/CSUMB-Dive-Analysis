@@ -4,9 +4,7 @@ import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
 import io.helidon.webserver.Service;
-
 import java.util.Collection;
-
 import org.mbari.expd.Dive;
 import org.mbari.expd.DiveDAO;
 import org.mbari.expd.jdbc.DiveDAOImpl;
@@ -33,6 +31,6 @@ public class DiveService implements Service {
         json.put("Dives", divesForRov);
         System.out.println(divesForRov.toArray()[0]);
         
-        response.send(json.toJSONString());// this sends back
+        response.send(json.toJSONString());
     }
 }
