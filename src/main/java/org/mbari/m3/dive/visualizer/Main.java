@@ -69,6 +69,7 @@ public final class Main {
 
         return Routing.builder()
                 .register("/dive", new DiveService())
+                .register("/annotations", new DiveAnnotationService())
                 .build();
     }
 }
