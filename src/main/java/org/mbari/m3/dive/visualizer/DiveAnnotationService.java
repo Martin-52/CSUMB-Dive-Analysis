@@ -13,7 +13,25 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.mbari.expd.jdbc.BaseDAOImpl;
+import org.mbari.expd.Dive;
+import org.mbari.expd.DiveDAO;
+import org.mbari.expd.jdbc.DiveDAOImpl;
+import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
+import org.mbari.expd.DiveDAO;
+import org.mbari.expd.jdbc.DiveDAOImpl;
+import org.mbari.expd.NavigationDatum;
+import org.mbari.expd.NavigationDatumDAO;
+
+import org.mbari.expd.CtdDatum;
+import org.mbari.expd.CtdDatumDAO;
+import org.mbari.expd.jdbc.CtdDatumDAOImpl;
+//import org.mbari.expd.jdbc.NavigationDAOImpl;
 
 public class DiveAnnotationService implements Service {
 
@@ -28,7 +46,6 @@ public class DiveAnnotationService implements Service {
             }
         });
     }
-    
 
     /**
      * Returns a list of dives for the given ROV.
@@ -38,11 +55,14 @@ public class DiveAnnotationService implements Service {
      * @throws InterruptedException
      * @throws IOException
      */
-    private void getRovDiveAnnotations(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
+    private void getRovDiveAnnotations(ServerRequest request, ServerResponse response)
+            throws IOException, InterruptedException {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
         JsonObject allAnnotationData = getVideoAndAnnotations(rovName, diveNumber);
+
+        getROVPath(allAnnotationData);
 
 
         JsonObject linksAndAnnotations = getVideoLinksAndAnnotations(allAnnotationData);
@@ -266,5 +286,61 @@ public class DiveAnnotationService implements Service {
             }
         }
         return video_reference_uuid;
-    }  
+    } 
+    
+    public JsonArray getROVPath(JsonObject allAnnotationData) {
+        if(allAnnotationData.isJsonNull()) {
+            System.out.println("EMPTY ANNOTATION TREE - getROVPath.getVideoReferenceUUID()");
+            return null;
+        }
+        JsonArray annotations = getAnnotations(allAnnotationData);
+        
+        JsonArray allRovInfo = new JsonArray();
+
+        for (int i = 0; i < annotations.size(); i++){
+            System.out.println("===========");
+            
+            if(annotations.get(i).getAsJsonObject().get("ancillary_data") != null){
+                //System.out.println(annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject());
+                if(annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("latitude") != null 
+                    && annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("longitude") != null 
+                    && annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("depth_meters") != null){
+                    JsonObject rovInfo = new JsonObject();
+                    rovInfo.addProperty("latitude", annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("latitude").getAsString());
+                    rovInfo.addProperty("longitude", annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("longitude").getAsString());
+                    rovInfo.addProperty("depth_meters", annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("depth_meters").getAsString());
+                    allRovInfo.add(rovInfo);
+                    
+                    System.out.println("latitude: " + annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("latitude"));
+                    System.out.println("longitude: " + annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("longitude"));    
+                    System.out.println("depth_meters: " +annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("depth_meters"));    
+                }
+            }
+        }
+        //return null;
+        return allRovInfo;
+    }
+
+    public List<String> getAllROVNamesEXPD(){
+        return BaseDAOImpl.getAllRovNames();
+    }
+
+    public List<NavigationDatum> getROVPathEXPD(String rovName, int diveNumber){
+        DiveDAO dao = new DiveDAOImpl();
+        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+        NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
+        return dao1.fetchBestNavigationData(dive);
+    }
+
+    public Dive getGeneralDiveInfoEXPD(String rovName, int diveNumber){
+        DiveDAO dao = new DiveDAOImpl();
+        return dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+    }
+
+    public List<CtdDatum> getDiveSamplesEXPD(String rovName,int diveNumber){
+        DiveDAO dao = new DiveDAOImpl();
+        Dive dive = dao.findByPlatformAndDiveNumber("Ventana", 4222);
+        CtdDatumDAO dao1 = new CtdDatumDAOImpl();
+        return dao1.fetchCtdData(dive);
+    }
 }
