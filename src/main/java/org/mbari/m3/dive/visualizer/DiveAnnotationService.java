@@ -67,8 +67,6 @@ public class DiveAnnotationService implements Service {
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
         
 
-        getAllROVNamesEXPD();
-
         JsonObject allAnnotationData = getVideoAndAnnotations(rovName, diveNumber);
         JsonObject linksAndAnnotations = getVideoLinksAndAnnotations(allAnnotationData);
 
@@ -257,6 +255,5 @@ public class DiveAnnotationService implements Service {
         }
         return allRovInfo;
     }
-
 
 }
