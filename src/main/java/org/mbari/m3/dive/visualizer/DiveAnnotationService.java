@@ -134,6 +134,10 @@ public class DiveAnnotationService implements Service {
         System.out.println("");
         System.out.println("");
 
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(linksAndAnnotations.toString());
     }
 
