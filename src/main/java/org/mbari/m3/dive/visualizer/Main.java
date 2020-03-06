@@ -1,6 +1,8 @@
 package org.mbari.m3.dive.visualizer;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.logging.LogManager;
 
 import io.helidon.config.Config;
 import io.helidon.webserver.Routing;
@@ -24,6 +26,15 @@ public final class Main {
      */
     public static void main(final String[] args) throws IOException {
         startServer();
+    }
+
+    /**
+     * Configure logging from logging.properties file.
+     */
+    private static void setupLogging() throws IOException {
+        try (InputStream is = Main.class.getResourceAsStream("/logging.properties")) {
+            LogManager.getLogManager().readConfiguration(is);
+        }
     }
 
     /**

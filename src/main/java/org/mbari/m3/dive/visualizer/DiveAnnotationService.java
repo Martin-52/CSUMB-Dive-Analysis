@@ -33,17 +33,22 @@ import org.mbari.expd.CtdDatumDAO;
 import org.mbari.expd.jdbc.CtdDatumDAOImpl;
 //import org.mbari.expd.jdbc.NavigationDAOImpl;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class DiveAnnotationService implements Service {
+    private final Logger log = Logger.getLogger(getClass().getName());
 
     @Override
     public void update(Routing.Rules rules) {
-        rules.get("/{rov}/{diveNumber}", (req, res) -> {
-            try {
-                getRovDiveAnnotations(req, res);
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+        rules
+            .get("/{rov}/{diveNumber}", (req, res) -> {
+                try {
+                    getRovDiveAnnotations(req, res);
+                } catch (IOException | InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
         });
     }
 
@@ -57,88 +62,21 @@ public class DiveAnnotationService implements Service {
      */
     private void getRovDiveAnnotations(ServerRequest request, ServerResponse response)
             throws IOException, InterruptedException {
+
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+        
 
         JsonObject allAnnotationData = getVideoAndAnnotations(rovName, diveNumber);
-
-        getROVPath(allAnnotationData);
-
-
         JsonObject linksAndAnnotations = getVideoLinksAndAnnotations(allAnnotationData);
-        System.out.println("************************************************************************************");
-        for(Map.Entry<String,JsonElement> entry : linksAndAnnotations.entrySet()){
-    
-            
-            System.out.println("Video Link: " + entry.getKey());
-            if(entry.getValue().getAsJsonArray().size()==0){
-                System.out.println("No Annotations");
-                System.out.println("************************************************************************************");
-                continue;
-            }
-            
-            // this will loop through each annotation
-            for(int j = 0; j < entry.getValue().getAsJsonArray().size(); j++){
-                System.out.println("Video Annotation " + (j+1));
-                System.out.println(entry.getValue().getAsJsonArray().get(j));
-                System.out.println("");
-            }
-            System.out.println("************************************************************************************");
-        }
-
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-
-        String vaa = linksAndAnnotations.toString();
-        System.out.println(vaa);
-
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-
-        JsonObject ans = new JsonParser().parse(vaa).getAsJsonObject();
-        System.out.println("************************************************************************************");
-        for(Map.Entry<String,JsonElement> entry : ans.entrySet()){
-    
-            
-            System.out.println("Video Link: " + entry.getKey());
-            if(entry.getValue().getAsJsonArray().size()==0){
-                System.out.println("No Annotations");
-                System.out.println("************************************************************************************");
-                continue;
-            }
-            
-            // this will loop through each annotation
-            for(int j = 0; j < entry.getValue().getAsJsonArray().size(); j++){
-                System.out.println("Video Annotation " + (j+1));
-                System.out.println(entry.getValue().getAsJsonArray().get(j));
-                System.out.println("");
-            }
-            System.out.println("************************************************************************************");
-        }
-
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
 
         response.headers().add("Access-Control-Allow-Origin", "*");
         response.headers().add("Access-Control-Allow-Headers", "*");
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(linksAndAnnotations.toString());
+
+        log.info("linksAndAnnotations object sent. Size: " + linksAndAnnotations.size() + " - DiveAnnotationService");
     }
 
     /**
@@ -153,6 +91,7 @@ public class DiveAnnotationService implements Service {
             .build();
 
         String path = "http://dsg.mbari.org/references/query/dive/" + rovName + "%20" + diveNumber;
+
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(path))
@@ -171,7 +110,7 @@ public class DiveAnnotationService implements Service {
     */
     private JsonArray getAnnotations(JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
-            System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.getAnnotations()");
+            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotations()");
             return null;
         }
         return allAnnotationData.getAsJsonArray("annotations");
@@ -183,7 +122,7 @@ public class DiveAnnotationService implements Service {
     */
     private JsonArray getMedia(JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
-            System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.getMedia()");
+            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getMedia()");
             return null;
         }
         return allAnnotationData.getAsJsonArray("media");
@@ -196,7 +135,7 @@ public class DiveAnnotationService implements Service {
     */
     private JsonArray getVideoLinks(JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
-            System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.getVideoLinks()");
+            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoLinks()");
             return null;
         }
         JsonArray allDiveVideos = new JsonArray();
@@ -213,7 +152,7 @@ public class DiveAnnotationService implements Service {
 
     private JsonObject getVideoLinksAndAnnotations(JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
-            System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.linksAndAnnotations()");
+            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoLinksAndAnnotations()");
             return null;
         }
         JsonArray allMedia = getMedia(allAnnotationData);
@@ -255,7 +194,7 @@ public class DiveAnnotationService implements Service {
     */
     public JsonArray getAnnotationsByVideoReferenceUUID(String video_reference_uuid,JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
-            System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.getAnnotationsByVideoReferenceUUID()");
+            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotationsByVideoReferenceUUID()");
             return null;
         }
 
@@ -272,7 +211,7 @@ public class DiveAnnotationService implements Service {
     // I am looking for the video_uuid that has the .mov video file, not .mp4
     public String getVideoReferenceUUID(String video_uuid,JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
-            System.out.println("EMPTY ANNOTATION TREE - AnnotationServieHelper.getVideoReferenceUUID()");
+            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoReferenceUUID()");
             return null;
         }
 
@@ -292,9 +231,9 @@ public class DiveAnnotationService implements Service {
         return video_reference_uuid;
     } 
     
-    public JsonArray getROVPath(JsonObject allAnnotationData) {
+    public JsonArray getROVPathFromAnnotations(JsonObject allAnnotationData) {
         if(allAnnotationData.isJsonNull()) {
-            System.out.println("EMPTY ANNOTATION TREE - getROVPath.getVideoReferenceUUID()");
+            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getROVPathFromAnnotations()");
             return null;
         }
         JsonArray annotations = getAnnotations(allAnnotationData);
@@ -302,10 +241,7 @@ public class DiveAnnotationService implements Service {
         JsonArray allRovInfo = new JsonArray();
 
         for (int i = 0; i < annotations.size(); i++){
-            System.out.println("===========");
-            
             if(annotations.get(i).getAsJsonObject().get("ancillary_data") != null){
-                //System.out.println(annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject());
                 if(annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("latitude") != null 
                     && annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("longitude") != null 
                     && annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("depth_meters") != null){
@@ -314,18 +250,14 @@ public class DiveAnnotationService implements Service {
                     rovInfo.addProperty("longitude", annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("longitude").getAsString());
                     rovInfo.addProperty("depth_meters", annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("depth_meters").getAsString());
                     allRovInfo.add(rovInfo);
-                    
-                    System.out.println("latitude: " + annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("latitude"));
-                    System.out.println("longitude: " + annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("longitude"));    
-                    System.out.println("depth_meters: " +annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("depth_meters"));    
                 }
             }
         }
-        //return null;
         return allRovInfo;
     }
 
     public List<String> getAllROVNamesEXPD(){
+        //JsonObject asd = new JsonParser().parse(BaseDAOImpl.getAllRovNames().toString()).getAsJsonObject();
         return BaseDAOImpl.getAllRovNames();
     }
 
@@ -343,7 +275,7 @@ public class DiveAnnotationService implements Service {
 
     public List<CtdDatum> getDiveSamplesEXPD(String rovName,int diveNumber){
         DiveDAO dao = new DiveDAOImpl();
-        Dive dive = dao.findByPlatformAndDiveNumber("Ventana", 4222);
+        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
         CtdDatumDAO dao1 = new CtdDatumDAOImpl();
         return dao1.fetchCtdData(dive);
     }
