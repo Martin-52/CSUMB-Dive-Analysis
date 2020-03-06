@@ -67,6 +67,8 @@ public class DiveAnnotationService implements Service {
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
         
 
+        getAllROVNamesEXPD();
+
         JsonObject allAnnotationData = getVideoAndAnnotations(rovName, diveNumber);
         JsonObject linksAndAnnotations = getVideoLinksAndAnnotations(allAnnotationData);
 
@@ -256,27 +258,5 @@ public class DiveAnnotationService implements Service {
         return allRovInfo;
     }
 
-    public List<String> getAllROVNamesEXPD(){
-        //JsonObject asd = new JsonParser().parse(BaseDAOImpl.getAllRovNames().toString()).getAsJsonObject();
-        return BaseDAOImpl.getAllRovNames();
-    }
 
-    public List<NavigationDatum> getROVPathEXPD(String rovName, int diveNumber){
-        DiveDAO dao = new DiveDAOImpl();
-        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
-        NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
-        return dao1.fetchBestNavigationData(dive);
-    }
-
-    public Dive getGeneralDiveInfoEXPD(String rovName, int diveNumber){
-        DiveDAO dao = new DiveDAOImpl();
-        return dao.findByPlatformAndDiveNumber(rovName, diveNumber);
-    }
-
-    public List<CtdDatum> getDiveSamplesEXPD(String rovName,int diveNumber){
-        DiveDAO dao = new DiveDAOImpl();
-        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
-        CtdDatumDAO dao1 = new CtdDatumDAOImpl();
-        return dao1.fetchCtdData(dive);
-    }
 }
