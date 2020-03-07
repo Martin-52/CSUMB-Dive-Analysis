@@ -72,15 +72,14 @@ public class DiveAnnotationService implements Service {
         JsonObject allAnnotationData = getVideoAndAnnotations(rovName, diveNumber);
         //JsonObject linksAndAnnotations = getVideoLinksAndAnnotations(allAnnotationData);
 
-        getVidsAndAnnotationsUPDATED(allAnnotationData);
 
-        // response.headers().add("Access-Control-Allow-Origin", "*");
-        // response.headers().add("Access-Control-Allow-Headers", "*");
-        // response.headers().add("Access-Control-Allow-Credentials", "true");
-        // response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        // response.send(linksAndAnnotations.toString());
+        JsonObject linksAndAnnotations = getVidsAndAnnotationsUPDATED(allAnnotationData);
 
-        // log.info("linksAndAnnotations object sent. Size: " + linksAndAnnotations.size() + " - DiveAnnotationService");
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(linksAndAnnotations.toString());
     }
 
     /**
