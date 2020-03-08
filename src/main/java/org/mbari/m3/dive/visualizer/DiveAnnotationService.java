@@ -206,20 +206,23 @@ public class DiveAnnotationService implements Service {
                 String video_reference_uuid = "";
                 if(videoLinks.get(j).toString().equals(allMedia.get(i).getAsJsonObject().get("uri").toString())){
 
-                    linksAndUUID.add(videoLinks.get(j).toString(), new JsonObject());
+                    String uri = videoLinks.get(j).toString();
+                    uri = uri.substring(1, uri.length()-1);
+                    linksAndUUID.add(uri, new JsonObject());
+                    //linksAndUUID.add(videoLinks.get(j).toString(), new JsonObject());
                     video_reference_uuid = getVideoReferenceUUID(allMedia.get(i).getAsJsonObject().get("video_uuid").toString(),allAnnotationData);
                                                             // length == 0 means that this mp4 video does not have a matching mov file. 
                                                             // It needs a matching mov file for us to get the
                                                             // video_reference_uuid that will get us the matching annotations
                     if(video_reference_uuid.length()==0){                                           
-                        linksAndUUID.get(videoLinks.get(j).toString()).getAsJsonObject().addProperty("video_reference_uuid", "No video_reference_uuid");
+                        linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid", "No video_reference_uuid");
                         // No mov available
                         mp4WithNoAvailableMov.add(videoLinks.get(j).toString());
                         
                     } else { 
-                        linksAndUUID.get(videoLinks.get(j).toString()).getAsJsonObject().addProperty("video_reference_uuid",video_reference_uuid.substring(1, video_reference_uuid.length()-1));
+                        linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid",video_reference_uuid.substring(1, video_reference_uuid.length()-1));
                     }
-                    linksAndUUID.get(videoLinks.get(j).toString()).getAsJsonObject().addProperty("timestamp", allMedia.get(i).getAsJsonObject().get("start_timestamp").toString().substring(1, allMedia.get(i).getAsJsonObject().get("start_timestamp").toString().length() - 1));
+                    linksAndUUID.get(uri).getAsJsonObject().addProperty("timestamp", allMedia.get(i).getAsJsonObject().get("start_timestamp").toString().substring(1, allMedia.get(i).getAsJsonObject().get("start_timestamp").toString().length() - 1));
                 }
             }
         }
@@ -378,7 +381,7 @@ public class DiveAnnotationService implements Service {
             String time = temp.replace(":", "");
 
             JsonObject newObj = new JsonObject();
-            newObj.addProperty("link", entry.getKey().substring(1, entry.getKey().length()-2));
+            newObj.addProperty("link", entry.getKey());
             newObj.addProperty("timestamp", Integer.parseInt(time)); 
                 
             mapping.add(newObj);
