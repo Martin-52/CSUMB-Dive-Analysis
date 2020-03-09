@@ -205,10 +205,9 @@ public class DiveAnnotationService implements Service {
             for(int i = 0; i < allMedia.size(); i++) {   
                 String video_reference_uuid = "";
                 if(videoLinks.get(j).toString().equals(allMedia.get(i).getAsJsonObject().get("uri").toString())){
-
-                    String uri = videoLinks.get(j).toString();
-                    uri = uri.substring(1, uri.length()-1);
-                    linksAndUUID.add(uri, new JsonObject());
+                    
+                    String uri = videoLinks.get(j).getAsString();
+                    linksAndUUID.add(videoLinks.get(j).getAsString(), new JsonObject());
                     //linksAndUUID.add(videoLinks.get(j).toString(), new JsonObject());
                     video_reference_uuid = getVideoReferenceUUID(allMedia.get(i).getAsJsonObject().get("video_uuid").toString(),allAnnotationData);
                                                             // length == 0 means that this mp4 video does not have a matching mov file. 
