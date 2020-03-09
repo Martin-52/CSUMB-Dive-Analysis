@@ -374,9 +374,13 @@ public class DiveAnnotationService implements Service {
         
         // add timestamps and links to mapping list
         for (Entry<String, JsonElement> entry : linksAndUUID.entrySet()) {
-            String timestamp = entry.getValue().getAsJsonObject().get("timestamp").toString();
+            String timestamp = entry.getValue().getAsJsonObject().get("timestamp").getAsString();
+            int i = 0;
+            for(; i < timestamp.length();i++){
+                if(timestamp.charAt(i)=='T') break;
+            }
 
-            String temp = timestamp.substring(12, timestamp.length()-2);
+            String temp = timestamp.substring(i+1,i+1+8);
             String time = temp.replace(":", "");
 
             JsonObject newObj = new JsonObject();
