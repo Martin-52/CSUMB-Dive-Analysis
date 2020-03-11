@@ -53,6 +53,7 @@ public class PhotoAnnotationService implements Service {
                 e.printStackTrace();
             }
         });
+
     }
 
     /**
@@ -70,7 +71,6 @@ public class PhotoAnnotationService implements Service {
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
         JsonObject allAnnotationData = getAnnotationData(rovName, diveNumber);
-
 
         JsonObject photoLinksAndAnnotations = getPhotoUrlsAndAnnotations(allAnnotationData);
 
@@ -135,6 +135,8 @@ public class PhotoAnnotationService implements Service {
             }
         }
 
+        //System.out.println(jpgPhotoUrlsMap);
+
         // order annotation arrays
         for (Entry<String, JsonElement> entry : jpgPhotoUrlsMap.entrySet()) {
             JsonArray orderedAnnotations = new JsonArray();
@@ -147,7 +149,7 @@ public class PhotoAnnotationService implements Service {
         mappingObj.add("photoMapping", getOrderedListOfPhotoLinks(jpgPhotoUrlsMap));
         jpgPhotoUrlsMap.add("mappingObject", mappingObj);
 
-        return null;
+        return jpgPhotoUrlsMap;
     }
 
     private boolean isJpg(String format){
@@ -175,7 +177,6 @@ public class PhotoAnnotationService implements Service {
         for(int i = 0; i < annotationArry.size();i++) {
             mapping.add(i, annotationArry.get(i).getAsJsonObject());
         }
-
 
         //sorts mapping by timestamp
         Collections.sort(mapping, new Comparator<JsonObject>() {
