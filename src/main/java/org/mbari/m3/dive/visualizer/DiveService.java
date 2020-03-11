@@ -15,10 +15,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -63,6 +65,22 @@ public class DiveService implements Service {
         rules.get("/checkdivenumber/{rov}/{diveNumber}", (req, res) -> {
             try {
                 checkDiveNumber(req, res);
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        });
+        rules.get("/getminanddepth/{rov}/{diveNumber}", (req, res) -> {
+            try {
+                getMinAndDepth(req, res);
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        });
+        rules.get("/gethouranddepth/{rov}/{diveNumber}", (req, res) -> {
+            try {
+                getMinAndDepth(req, res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -142,5 +160,67 @@ public class DiveService implements Service {
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(existObj.toString());
+    }
+
+    public void getMinAndDepth(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        DiveDAO dao = new DiveDAOImpl();
+        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+
+        if(dive==null){
+            System.out.println("getLatsAndLongs(): null dive");
+            return;
+        }
+
+        NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
+        List<NavigationDatum> nav = dao1.fetchBestNavigationData(dive);
+
+        JsonArray minAndDepth = new JsonArray();
+
+        for(int i = 0 ; i < nav.size();i++){
+            JsonObject newMinDepthObj = new JsonObject();
+            newMinDepthObj.addProperty("minute", Double.toString(nav.get(i).getDate().getMinutes()));
+            newMinDepthObj.addProperty("depth", Double.toString(nav.get(i).getDepth()));
+            minAndDepth.add(newMinDepthObj);
+        }
+
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(minAndDepth.toString());
+    }
+
+    public void getHourAndDepth(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        DiveDAO dao = new DiveDAOImpl();
+        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+
+        if(dive==null){
+            System.out.println("getLatsAndLongs(): null dive");
+            return;
+        }
+
+        NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
+        List<NavigationDatum> nav = dao1.fetchBestNavigationData(dive);
+
+        JsonArray hourAndDepth = new JsonArray();
+
+        for(int i = 0 ; i < nav.size();i++){
+            JsonObject newMinDepthObj = new JsonObject();
+            newMinDepthObj.addProperty("minute", Double.toString(nav.get(i).getDate().getHours()));
+            newMinDepthObj.addProperty("depth", Double.toString(nav.get(i).getDepth()));
+            hourAndDepth.add(newMinDepthObj);
+        }
+
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(hourAndDepth.toString());
     }
 }
