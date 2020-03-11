@@ -50,14 +50,6 @@ public class DiveAnnotationService implements Service {
             }
         });
 
-        rules.get("/getlatsandlongs/{rov}/{diveNumber}", (req, res) -> {
-            try {
-                getLatsAndLongs(req, res);
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        });
     }
 
     /**
@@ -85,67 +77,6 @@ public class DiveAnnotationService implements Service {
         response.send(linksAndAnnotations.toString());
     }
 
-    void getLatsAndLongs(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-
-        DiveDAO dao = new DiveDAOImpl();
-        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
-
-        if(dive==null){
-            System.out.println("getLatsAndLongs(): null dive");
-            return;
-        }
-
-        NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
-        List<NavigationDatum> nav = dao1.fetchBestNavigationData(dive);
-
-        JsonArray latsAndLongs = new JsonArray();
-
-        for(int i = 0 ; i < nav.size();i++){
-            JsonObject newLatLongObj = new JsonObject();
-            newLatLongObj.addProperty("latitude", Double.toString(nav.get(i).getLongitude()));
-            newLatLongObj.addProperty("longitude", Double.toString(nav.get(i).getLatitude()));
-            latsAndLongs.add(newLatLongObj);
-        }
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(latsAndLongs.toString());
-    }
-
-    void checkDiveNumber(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-
-        DiveDAO dao = new DiveDAOImpl();
-        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
-
-        if(dive==null){
-            System.out.println("getLatsAndLongs(): null dive");
-            return;
-        }
-
-        NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
-        List<NavigationDatum> nav = dao1.fetchBestNavigationData(dive);
-
-        JsonArray latsAndLongs = new JsonArray();
-
-        for(int i = 0 ; i < nav.size();i++){
-            JsonObject newLatLongObj = new JsonObject();
-            newLatLongObj.addProperty("latitude", Double.toString(nav.get(i).getLongitude()));
-            newLatLongObj.addProperty("longitude", Double.toString(nav.get(i).getLatitude()));
-            latsAndLongs.add(newLatLongObj);
-        }
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(latsAndLongs.toString());
-    }
 
 
     /**
