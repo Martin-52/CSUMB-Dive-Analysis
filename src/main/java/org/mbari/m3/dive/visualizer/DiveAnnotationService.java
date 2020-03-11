@@ -1,18 +1,10 @@
 package org.mbari.m3.dive.visualizer;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import io.helidon.webserver.Routing;
-import io.helidon.webserver.ServerRequest;
-import io.helidon.webserver.ServerResponse;
-import io.helidon.webserver.Service;
 import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,25 +12,29 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
-import org.mbari.expd.jdbc.BaseDAOImpl;
-import org.mbari.expd.Dive;
-import org.mbari.expd.DiveDAO;
-import org.mbari.expd.jdbc.DiveDAOImpl;
-import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
-import org.mbari.expd.DiveDAO;
-import org.mbari.expd.jdbc.DiveDAOImpl;
-import org.mbari.expd.NavigationDatum;
-import org.mbari.expd.NavigationDatumDAO;
-
-import org.mbari.expd.CtdDatum;
-import org.mbari.expd.CtdDatumDAO;
-import org.mbari.expd.jdbc.CtdDatumDAOImpl;
-//import org.mbari.expd.jdbc.NavigationDAOImpl;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import org.mbari.expd.Dive;
+import org.mbari.expd.DiveDAO;
+import org.mbari.expd.NavigationDatum;
+import org.mbari.expd.NavigationDatumDAO;
+import org.mbari.expd.jdbc.DiveDAOImpl;
+import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
+//import org.mbari.expd.jdbc.NavigationDAOImpl;
+import org.mbari.expd.jdbc.NavigationDatumImpl;
+
+import io.helidon.webserver.Routing;
+import io.helidon.webserver.ServerRequest;
+import io.helidon.webserver.ServerResponse;
+import io.helidon.webserver.Service;
 
 public class DiveAnnotationService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
@@ -53,6 +49,7 @@ public class DiveAnnotationService implements Service {
                 e.printStackTrace();
             }
         });
+
     }
 
     /**
@@ -70,8 +67,6 @@ public class DiveAnnotationService implements Service {
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
         JsonObject allAnnotationData = getVideoAndAnnotations(rovName, diveNumber);
-        //JsonObject linksAndAnnotations = getVideoLinksAndAnnotations(allAnnotationData);
-
 
         JsonObject linksAndAnnotations = getVidsAndAnnotationsUPDATED(allAnnotationData);
 
@@ -81,6 +76,8 @@ public class DiveAnnotationService implements Service {
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(linksAndAnnotations.toString());
     }
+
+
 
     /**
      * Sends http request to retrieve the json for the given rov and dive number
