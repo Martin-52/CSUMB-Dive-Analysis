@@ -4,27 +4,17 @@ import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
 import io.helidon.webserver.Service;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.Gson;
-
 import org.mbari.expd.Dive;
 import org.mbari.expd.DiveDAO;
 import org.mbari.expd.jdbc.BaseDAOImpl;
 import org.mbari.expd.jdbc.DiveDAOImpl;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class DiveService implements Service {
 
-    @Override // this is called everytime this path is accessed
+    @Override
     public void update(Routing.Rules rules) {
         rules
             .get("/getRovNames", this::getRovNames)
