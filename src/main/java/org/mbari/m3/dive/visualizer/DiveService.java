@@ -5,16 +5,19 @@ import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
 import io.helidon.webserver.Service;
 import java.util.Collection;
+import com.google.gson.JsonArray;
 import org.mbari.expd.Dive;
 import org.mbari.expd.DiveDAO;
+import org.mbari.expd.jdbc.BaseDAOImpl;
 import org.mbari.expd.jdbc.DiveDAOImpl;
 import org.json.simple.JSONObject;
 
 public class DiveService implements Service {
 
-    @Override // this is called everytime this path is accessed
+    @Override
     public void update(Routing.Rules rules) {
         rules
+            .get("/getRovNames", this::getRovNames)
             .get("/{rov}", this::getRovDives);
     }
 
@@ -32,5 +35,22 @@ public class DiveService implements Service {
         System.out.println(divesForRov.toArray()[0]);
         
         response.send(json.toJSONString());
+    }
+    
+    /**
+     * Returns a list of ROV names.
+     * @param request
+     * @param response
+     */
+    private void getRovNames(ServerRequest request, ServerResponse response) {
+        JsonArray arr = new JsonArray();
+        for (String name: BaseDAOImpl.getAllRovNames()) {
+            arr.add(name);
+        }
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(arr.toString());
     }
 }
