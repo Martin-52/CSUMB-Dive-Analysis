@@ -80,7 +80,7 @@ public class DiveService implements Service {
         });
         rules.get("/gethouranddepth/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getMinAndDepth(req, res);
+                getHourAndDepth(req, res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -212,7 +212,7 @@ public class DiveService implements Service {
 
         for(int i = 0 ; i < nav.size();i++){
             JsonObject newMinDepthObj = new JsonObject();
-            newMinDepthObj.addProperty("minute", Double.toString(nav.get(i).getDate().getHours()));
+            newMinDepthObj.addProperty("hour", Double.toString(nav.get(i).getDate().getHours()));
             newMinDepthObj.addProperty("depth", Double.toString(nav.get(i).getDepth()));
             hourAndDepth.add(newMinDepthObj);
         }
