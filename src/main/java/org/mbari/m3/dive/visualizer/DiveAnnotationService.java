@@ -28,7 +28,6 @@ import org.mbari.expd.NavigationDatum;
 import org.mbari.expd.NavigationDatumDAO;
 import org.mbari.expd.jdbc.DiveDAOImpl;
 import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
-//import org.mbari.expd.jdbc.NavigationDAOImpl;
 import org.mbari.expd.jdbc.NavigationDatumImpl;
 
 import io.helidon.webserver.Routing;
@@ -68,7 +67,7 @@ public class DiveAnnotationService implements Service {
 
         JsonObject allAnnotationData = getVideoAndAnnotations(rovName, diveNumber);
 
-        JsonObject linksAndAnnotations = getVidsAndAnnotationsUPDATED(allAnnotationData);
+        JsonObject linksAndAnnotations = getVidsAndAnnotations(allAnnotationData);
 
         response.headers().add("Access-Control-Allow-Origin", "*");
         response.headers().add("Access-Control-Allow-Headers", "*");
@@ -147,48 +146,8 @@ public class DiveAnnotationService implements Service {
         return allDiveVideos;
     }
 
-    private JsonObject getVideoLinksAndAnnotations(JsonObject allAnnotationData) {
-        if (allAnnotationData.isJsonNull()) {
-            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoLinksAndAnnotations()");
-            return null;
-        }
-        JsonArray allMedia = getMedia(allAnnotationData);
-        JsonArray videoLinks = getVideoLinks(allAnnotationData);
-        JsonObject linksAndUUID = new JsonObject(); // linksAndUUID eventually become links and their annotations
 
-        for (int j = 0; j < videoLinks.size(); j++) {
-
-            for (int i = 0; i < allMedia.size(); i++) {
-                String video_reference_uuid = "";
-                if (videoLinks.get(j).toString().equals(allMedia.get(i).getAsJsonObject().get("uri").toString())) {
-                    video_reference_uuid = getVideoReferenceUUID(
-                            allMedia.get(i).getAsJsonObject().get("video_uuid").toString(), allAnnotationData);
-                    // length == 0 means that this mp4 video does not have a matching mov file.
-                    // It needs a matching mov file for us to get the
-                    // video_reference_uuid that will get us the matching annotations
-                    if (video_reference_uuid.length() == 0) {
-                        linksAndUUID.addProperty(videoLinks.get(j).toString(), "No video_reference_uuid");
-                    } else {
-                        linksAndUUID.addProperty(videoLinks.get(j).toString(),video_reference_uuid.substring(1, video_reference_uuid.length() - 1));// trimming excess quotation marks
-                    }
-                }
-            }
-        }
-
-        // now that i got the links and their video_reference_uuids, time to get the
-        // annotations to each video link
-        for (Map.Entry<String, JsonElement> entry : linksAndUUID.entrySet()) {
-            if (entry.getValue().toString().substring(1, entry.getValue().toString().length() - 1)
-                    .equals("No video_reference_uuid")) {
-                entry.setValue(new JsonArray()); // If there is no video_reference_uuid, it cannot have annotations
-                continue;
-            }
-            entry.setValue(getAnnotationsByVideoReferenceUUID(entry.getValue().toString(), allAnnotationData));
-        }
-        return linksAndUUID;
-    }
-
-    public JsonObject getVidsAndAnnotationsUPDATED(JsonObject allAnnotationData) {
+    public JsonObject getVidsAndAnnotations(JsonObject allAnnotationData) {
         if (allAnnotationData.isJsonNull()) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoLinksAndAnnotations()");
             return null;
@@ -224,7 +183,6 @@ public class DiveAnnotationService implements Service {
         }
         
         // gets and orders annotations
-        int noAnnotations = 0;
         for (Entry<String, JsonElement> entry : linksAndUUID.entrySet()) {
             if(!entry.getValue().getAsJsonObject().get("video_reference_uuid").toString().substring(1,entry.getValue().getAsJsonObject().get("video_reference_uuid").toString().length()-1).equals("No video_reference_uuid")){
                 entry.getValue().getAsJsonObject().add("annotations", getAnnotationsByVideoReferenceUUID(entry.getValue().getAsJsonObject().get("video_reference_uuid").toString(), allAnnotationData));
@@ -235,14 +193,13 @@ public class DiveAnnotationService implements Service {
                 }
 
             } else {
-                noAnnotations++;
                 entry.getValue().getAsJsonObject().add("annotations", new JsonArray());
             }
             entry.getValue().getAsJsonObject().remove("video_reference_uuid");
         }
 
         // add mapping to linksAndUUID
-        // i made an oject in case i wanted to add another variable
+        // i made an object in case i wanted to add another variable
         JsonObject mappingObj = new JsonObject();
         mappingObj.add("videoMapping", getOrderedListOfMp4Links(linksAndUUID));
         linksAndUUID.add("mappingObject", mappingObj);
@@ -335,7 +292,6 @@ public class DiveAnnotationService implements Service {
         for(int i = 0; i < annotationArry.size();i++) {
             mapping.add(i, annotationArry.get(i).getAsJsonObject());
         }
-
 
         //sorts mapping by timestamp
         Collections.sort(mapping, new Comparator<JsonObject>() {

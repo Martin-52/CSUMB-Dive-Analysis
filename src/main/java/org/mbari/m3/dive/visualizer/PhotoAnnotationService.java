@@ -14,28 +14,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
-import org.mbari.expd.jdbc.BaseDAOImpl;
-import org.mbari.expd.Dive;
-import org.mbari.expd.DiveDAO;
-import org.mbari.expd.jdbc.DiveDAOImpl;
-import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
-import org.mbari.expd.DiveDAO;
-import org.mbari.expd.jdbc.DiveDAOImpl;
-import org.mbari.expd.NavigationDatum;
-import org.mbari.expd.NavigationDatumDAO;
-
-import org.mbari.expd.CtdDatum;
-import org.mbari.expd.CtdDatumDAO;
-import org.mbari.expd.jdbc.CtdDatumDAOImpl;
-//import org.mbari.expd.jdbc.NavigationDAOImpl;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -71,7 +53,6 @@ public class PhotoAnnotationService implements Service {
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
         JsonObject allAnnotationData = getAnnotationData(rovName, diveNumber);
-
         JsonObject photoLinksAndAnnotations = getPhotoUrlsAndAnnotations(allAnnotationData);
 
         response.headers().add("Access-Control-Allow-Origin", "*");
@@ -118,13 +99,20 @@ public class PhotoAnnotationService implements Service {
         for(int i = 0; i < annotations.size(); i++){
             if(annotations.get(i).getAsJsonObject().get("image_references")!=null){
                 int imageArrayLength = annotations.get(i).getAsJsonObject().get("image_references").getAsJsonArray().size();
+                
                 for(int j = 0; j < imageArrayLength; j++) {
                     String photoUrl = annotations.get(i).getAsJsonObject().get("image_references").getAsJsonArray().get(j).getAsJsonObject().get("url").getAsString();
                     String format = annotations.get(i).getAsJsonObject().get("image_references").getAsJsonArray().get(j).getAsJsonObject().get("format").getAsString();
+
                     if(isJpg(format)){
                         if(!jpgPhotoUrlsMap.has(photoUrl)){ // some photos have multiple annotations. photoUrl will have a list of photos as value
+                            // Missing timestamp
+                            String timestamp = "";
+                            if(annotations.get(i).getAsJsonObject().get("recorded_timestamp")==null){
+                                continue;
+                            }
+                            timestamp = annotations.get(i).getAsJsonObject().get("recorded_timestamp").getAsString();
                             jpgPhotoUrlsMap.add(photoUrl, new JsonObject());
-                            String timestamp = annotations.get(i).getAsJsonObject().get("recorded_timestamp").getAsString();
                             jpgPhotoUrlsMap.get(photoUrl).getAsJsonObject().addProperty("timestamp", timestamp);
                             jpgPhotoUrlsMap.get(photoUrl).getAsJsonObject().add("annotations", new JsonArray());
                         }
@@ -134,8 +122,6 @@ public class PhotoAnnotationService implements Service {
                 }
             }
         }
-
-        //System.out.println(jpgPhotoUrlsMap);
 
         // order annotation arrays
         for (Entry<String, JsonElement> entry : jpgPhotoUrlsMap.entrySet()) {
@@ -247,7 +233,6 @@ public class PhotoAnnotationService implements Service {
         for(int i = 0; i < mapping.size();i++) {
             finalMapping.add(mapping.get(i).get("link"));
         }
-
         return finalMapping;
     }
 
