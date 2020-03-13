@@ -1,46 +1,32 @@
 package org.mbari.m3.dive.visualizer;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-import org.mbari.expd.Dive;
-import org.mbari.expd.DiveDAO;
-import org.mbari.expd.NavigationDatum;
-import org.mbari.expd.NavigationDatumDAO;
-import org.mbari.expd.jdbc.DiveDAOImpl;
-import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
-import org.mbari.expd.jdbc.NavigationDatumImpl;
-
 import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
 import io.helidon.webserver.Service;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Map.Entry;
+import java.util.Set;
+
 
 public class DiveAnnotationService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
@@ -55,7 +41,6 @@ public class DiveAnnotationService implements Service {
                 e.printStackTrace();
             }
         });
-
     }
 
     /**
@@ -72,7 +57,7 @@ public class DiveAnnotationService implements Service {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        JsonObject allAnnotationData = getVideoAndAnnotations(rovName, diveNumber);
+        JsonObject allAnnotationData = getDiveDataThroughHttpRequest(rovName, diveNumber);
 
         JsonObject linksAndAnnotations = getVidsAndAnnotations(allAnnotationData);
 
@@ -84,14 +69,13 @@ public class DiveAnnotationService implements Service {
     }
 
 
-
     /**
      * Sends http request to retrieve the json for the given rov and dive number
      * 
      * @param rovName
      * @param diveNumber
      */
-    private JsonObject getVideoAndAnnotations(String rovName, int diveNumber) throws IOException, InterruptedException {
+    private JsonObject getDiveDataThroughHttpRequest(String rovName, int diveNumber) throws IOException, InterruptedException {
 
         final HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
@@ -154,7 +138,7 @@ public class DiveAnnotationService implements Service {
     }
 
 
-    public JsonObject getVidsAndAnnotations(JsonObject allAnnotationData) {
+    private JsonObject getVidsAndAnnotations(JsonObject allAnnotationData) {
         if (allAnnotationData.isJsonNull()) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoLinksAndAnnotations()");
             return null;
@@ -167,33 +151,62 @@ public class DiveAnnotationService implements Service {
         for(int j = 0; j < videoLinks.size();j++) {
             for(int i = 0; i < allMedia.size(); i++) {   
                 String video_reference_uuid = "";
-                if(videoLinks.get(j).getAsString().equals(allMedia.get(i).getAsJsonObject().get("uri").getAsString())){
-                    
+                if(videoLinks.get(j).getAsString().equals(
+                    allMedia.get(i)
+                        .getAsJsonObject()
+                        .get("uri")
+                        .getAsString())){ 
+
                     String uri = videoLinks.get(j).getAsString();
                     linksAndUUID.add(uri, new JsonObject());
-                    video_reference_uuid = getVideoReferenceUUID(allMedia.get(i).getAsJsonObject().get("video_uuid").getAsString(),allAnnotationData);
+
+                    video_reference_uuid = getVideoReferenceUUID(
+                        allMedia.get(i)
+                            .getAsJsonObject()
+                            .get("video_uuid")
+                            .getAsString() 
+                        ,allAnnotationData);
                     // length == 0 means that this mp4 video does not have a matching mov file. It needs a matching mov file 
                     // for us to get the video_reference_uuid that will get us the matching annotations
                     if(video_reference_uuid.length()==0){                                           
-                        linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid", "No video_reference_uuid");
+                        linksAndUUID.get(uri)
+                            .getAsJsonObject()
+                            .addProperty("video_reference_uuid", "No video_reference_uuid");
                         mp4WithNoAvailableMov.add(videoLinks.get(j).getAsString());
                     } else { 
                         linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid",video_reference_uuid);
                     }
-                    linksAndUUID.get(uri).getAsJsonObject().addProperty("timestamp", allMedia.get(i).getAsJsonObject().get("start_timestamp").getAsString());
-                    linksAndUUID.get(uri).getAsJsonObject().addProperty("duration_millis", allMedia.get(i).getAsJsonObject().get("duration_millis").getAsString());
+                    linksAndUUID.get(uri).getAsJsonObject().addProperty("timestamp", 
+                        allMedia.get(i)
+                        .getAsJsonObject()
+                        .get("start_timestamp")
+                        .getAsString());
+                    linksAndUUID.get(uri).getAsJsonObject().addProperty("duration_millis", 
+                        allMedia.get(i)
+                        .getAsJsonObject()
+                        .get("duration_millis")
+                        .getAsString());
                 }
             }
         }
         
         // Gets and Orders annotations
         for (Entry<String, JsonElement> entry : linksAndUUID.entrySet()) {
-            if(!entry.getValue().getAsJsonObject().get("video_reference_uuid").getAsString().equals("No video_reference_uuid")){
+            if(!entry.getValue()
+            .getAsJsonObject()
+            .get("video_reference_uuid")
+            .getAsString()
+            .equals("No video_reference_uuid")){
+
                 String vid_ref_id = entry.getValue().getAsJsonObject().get("video_reference_uuid").getAsString();
                 String timestamp = entry.getValue().getAsJsonObject().get("timestamp").getAsString();
                 int duration = entry.getValue().getAsJsonObject().get("duration_millis").getAsInt();
 
-                JsonArray videoAnnotations = getAnnotationsByVidRefUUIDAndTimestampDuration(vid_ref_id, timestamp, duration , allAnnotationData);
+                JsonArray videoAnnotations = getAnnotationsByVidRefUUIDAndTimestampDuration(
+                    vid_ref_id,
+                    timestamp, 
+                    duration, 
+                    allAnnotationData);
 
                 if(videoAnnotations.size()>0){
                     JsonArray newSortedArray = sortAnnotationArray(videoAnnotations);
@@ -207,22 +220,22 @@ public class DiveAnnotationService implements Service {
             entry.getValue().getAsJsonObject().remove("duration_millis");
         }
 
-
         // Add mapping to linksAndUUID
         // Made an object in case we want to add another variable
-        JsonObject mappingObj = new JsonObject();
-        mappingObj.add("videoMapping", getOrderedListOfMp4Links(linksAndUUID));
-        linksAndUUID.add("mappingObject", mappingObj);
+        //JsonObject mappingObj = new JsonObject();
+        //mappingObj.add("videoMapping", getOrderedListOfMp4Links(linksAndUUID));
+        linksAndUUID.add("videoOrdering",getOrderedListOfMp4Links(linksAndUUID));
 
         return linksAndUUID;
     }
-
 
     /**
     * This function takes the video_reference_uuid. It will return a list (Gson list) of annotations
     * @param video_reference_uuid
     */
-    private JsonArray getAnnotationsByVidRefUUIDAndTimestampDuration(String video_reference_uuid, String timestamp, int duration, JsonObject allAnnotationData){
+    private JsonArray getAnnotationsByVidRefUUIDAndTimestampDuration(
+        String video_reference_uuid, String timestamp, int duration, JsonObject allAnnotationData){
+
         if(allAnnotationData.isJsonNull()) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotationsByVidRefUUIDAndTimestampDuration()");
             return null;
@@ -236,14 +249,26 @@ public class DiveAnnotationService implements Service {
         
         Set<String> annotationUUIDSet = new HashSet<String>();
 
-        // compare all annotations that have a time between the start and end time, and ones with matching vid reference ids
+        // Compare all annotations that have a time between the start and end time, 
+        // and ones with matching vid reference ids
         for (int i = 0; i < allAnnotations.size(); i ++) {
-            String curObsUUID = allAnnotations.get(i).getAsJsonObject().get("observation_uuid").getAsString();
-            String curVidRefUUID = allAnnotations.get(i).getAsJsonObject().get("video_reference_uuid").getAsString();
-            long curTimestamp = getTimeInMillis(allAnnotations.get(i).getAsJsonObject().get("recorded_timestamp").getAsString());
+            String curObsUUID = allAnnotations.get(i)
+                .getAsJsonObject()
+                .get("observation_uuid")
+                .getAsString();
+            String curVidRefUUID = allAnnotations.get(i)
+                .getAsJsonObject()
+                .get("video_reference_uuid")
+                .getAsString();
+            long curTimestamp = getTimeInMillis(allAnnotations.get(i)
+                .getAsJsonObject()
+                .get("recorded_timestamp")
+                .getAsString());
 
             if(!annotationUUIDSet.contains(curObsUUID)){
-                if(curTimestamp <= endTime && curTimestamp >= startTime || video_reference_uuid.equals(curVidRefUUID)){
+                if(curTimestamp <= endTime && curTimestamp >= startTime 
+                    || video_reference_uuid.equals(curVidRefUUID)){
+
                     videoAnnotations.add(allAnnotations.get(i).getAsJsonObject());
                     annotationUUIDSet.add(curObsUUID);
                 }
@@ -269,7 +294,7 @@ public class DiveAnnotationService implements Service {
     }
 
     // I am looking for the video_uuid that has the .mov video file, not .mp4
-    public String getVideoReferenceUUID(String video_uuid,JsonObject allAnnotationData){
+    private String getVideoReferenceUUID(String video_uuid,JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoReferenceUUID()");
             return null;
@@ -279,11 +304,20 @@ public class DiveAnnotationService implements Service {
         String video_reference_uuid = "";
 
         for(int i = 0; i < allMedia.size(); i++) {
-            String curr_uuid = allMedia.get(i).getAsJsonObject().get("video_uuid").getAsString();
+            String curr_uuid = allMedia.get(i)
+                .getAsJsonObject()
+                .get("video_uuid")
+                .getAsString();
             if(video_uuid.equals(curr_uuid)){
-                String curr_uri = allMedia.get(i).getAsJsonObject().get("uri").getAsString();
+                String curr_uri = allMedia.get(i)
+                    .getAsJsonObject()
+                    .get("uri")
+                    .getAsString();
                 if(curr_uri.charAt(curr_uri.length()-1)=='v') {
-                    video_reference_uuid = allMedia.get(i).getAsJsonObject().get("video_reference_uuid").getAsString();
+                    video_reference_uuid = allMedia.get(i)
+                        .getAsJsonObject()
+                        .get("video_reference_uuid")
+                        .getAsString();
                     break;
                 }
             }
@@ -291,7 +325,7 @@ public class DiveAnnotationService implements Service {
         return video_reference_uuid;
     } 
     
-    public JsonArray getROVPathFromAnnotations(JsonObject allAnnotationData) {
+    private JsonArray getROVPathFromAnnotations(JsonObject allAnnotationData) {
         if(allAnnotationData.isJsonNull()) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getROVPathFromAnnotations()");
             return null;
@@ -301,14 +335,34 @@ public class DiveAnnotationService implements Service {
         JsonArray allRovInfo = new JsonArray();
 
         for (int i = 0; i < annotations.size(); i++){
-            if(annotations.get(i).getAsJsonObject().get("ancillary_data") != null){
-                if(annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("latitude") != null 
-                    && annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("longitude") != null 
-                    && annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("depth_meters") != null){
+            JsonObject ancillaryData = annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject();
+            if(ancillaryData!= null){
+                if(ancillaryData.get("latitude") != null 
+                    && ancillaryData.get("longitude") != null 
+                    && ancillaryData.get("depth_meters") != null){
+
                     JsonObject rovInfo = new JsonObject();
-                    rovInfo.addProperty("latitude", annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("latitude").getAsString());
-                    rovInfo.addProperty("longitude", annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("longitude").getAsString());
-                    rovInfo.addProperty("depth_meters", annotations.get(i).getAsJsonObject().get("ancillary_data").getAsJsonObject().get("depth_meters").getAsString());
+                    rovInfo.addProperty("latitude", 
+                        annotations.get(i)
+                            .getAsJsonObject()
+                            .get("ancillary_data")
+                            .getAsJsonObject()
+                            .get("latitude")
+                            .getAsString());
+                    rovInfo.addProperty("longitude", 
+                        annotations.get(i)
+                            .getAsJsonObject()
+                            .get("ancillary_data")
+                            .getAsJsonObject()
+                            .get("longitude")
+                            .getAsString());
+                    rovInfo.addProperty("depth_meters", 
+                        annotations.get(i)
+                            .getAsJsonObject()
+                            .get("ancillary_data")
+                            .getAsJsonObject()
+                            .get("depth_meters")
+                            .getAsString());
                     allRovInfo.add(rovInfo);
                 }
             }
@@ -324,6 +378,7 @@ public class DiveAnnotationService implements Service {
             }
             indexToGetTime++;
         }
+        
         return timestamp.substring(indexToGetTime,indexToGetTime+8).replace(":", "");
     }
 
@@ -338,7 +393,6 @@ public class DiveAnnotationService implements Service {
         Collections.sort(mapping, new Comparator<JsonObject>() {
             @Override
             public int compare(JsonObject obj1, JsonObject obj2) {
-                
                 // first we need to clean the timestamps 
                 // we can check if String is good
                 String time1 = getTimeFromTimestamp(obj1.get("recorded_timestamp").getAsString());
@@ -354,7 +408,6 @@ public class DiveAnnotationService implements Service {
             }
         });
 
-        // back to jsonArray
         JsonArray temp = new JsonArray();
         for(int i = 0; i < mapping.size();i++) {
             temp.add(mapping.get(i).getAsJsonObject());
