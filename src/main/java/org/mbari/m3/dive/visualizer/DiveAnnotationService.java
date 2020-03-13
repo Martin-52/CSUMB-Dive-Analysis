@@ -5,12 +5,17 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import java.util.logging.Level;
@@ -34,6 +39,8 @@ import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
 import io.helidon.webserver.Service;
+import java.util.Date;
+import java.util.HashSet;
 
 public class DiveAnnotationService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
@@ -138,9 +145,9 @@ public class DiveAnnotationService implements Service {
 
         JsonArray media = allAnnotationData.getAsJsonArray("media");
         for (int i = 0; i < media.size(); i++) {
-            String uri = media.get(i).getAsJsonObject().get("uri").toString();
-            if (uri.charAt(uri.length() - 2) == '4') {
-                allDiveVideos.add(media.get(i).getAsJsonObject().get("uri"));
+            String uri = media.get(i).getAsJsonObject().get("uri").getAsString();
+            if (uri.charAt(uri.length() - 1) == '4') {
+                allDiveVideos.add(uri);
             }
         }
         return allDiveVideos;
@@ -160,35 +167,36 @@ public class DiveAnnotationService implements Service {
         for(int j = 0; j < videoLinks.size();j++) {
             for(int i = 0; i < allMedia.size(); i++) {   
                 String video_reference_uuid = "";
-                if(videoLinks.get(j).toString().equals(allMedia.get(i).getAsJsonObject().get("uri").toString())){
+                if(videoLinks.get(j).getAsString().equals(allMedia.get(i).getAsJsonObject().get("uri").getAsString())){
                     
                     String uri = videoLinks.get(j).getAsString();
-                    linksAndUUID.add(videoLinks.get(j).getAsString(), new JsonObject());
-                    //linksAndUUID.add(videoLinks.get(j).toString(), new JsonObject());
-                    video_reference_uuid = getVideoReferenceUUID(allMedia.get(i).getAsJsonObject().get("video_uuid").toString(),allAnnotationData);
-                                                            // length == 0 means that this mp4 video does not have a matching mov file. 
-                                                            // It needs a matching mov file for us to get the
-                                                            // video_reference_uuid that will get us the matching annotations
+                    linksAndUUID.add(uri, new JsonObject());
+                    video_reference_uuid = getVideoReferenceUUID(allMedia.get(i).getAsJsonObject().get("video_uuid").getAsString(),allAnnotationData);
+                    // length == 0 means that this mp4 video does not have a matching mov file. It needs a matching mov file 
+                    // for us to get the video_reference_uuid that will get us the matching annotations
                     if(video_reference_uuid.length()==0){                                           
                         linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid", "No video_reference_uuid");
-                        // No mov available
-                        mp4WithNoAvailableMov.add(videoLinks.get(j).toString());
-                        
+                        mp4WithNoAvailableMov.add(videoLinks.get(j).getAsString());
                     } else { 
-                        linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid",video_reference_uuid.substring(1, video_reference_uuid.length()-1));
+                        linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid",video_reference_uuid);
                     }
-                    linksAndUUID.get(uri).getAsJsonObject().addProperty("timestamp", allMedia.get(i).getAsJsonObject().get("start_timestamp").toString().substring(1, allMedia.get(i).getAsJsonObject().get("start_timestamp").toString().length() - 1));
+                    linksAndUUID.get(uri).getAsJsonObject().addProperty("timestamp", allMedia.get(i).getAsJsonObject().get("start_timestamp").getAsString());
+                    linksAndUUID.get(uri).getAsJsonObject().addProperty("duration_millis", allMedia.get(i).getAsJsonObject().get("duration_millis").getAsString());
                 }
             }
         }
         
-        // gets and orders annotations
+        // Gets and Orders annotations
         for (Entry<String, JsonElement> entry : linksAndUUID.entrySet()) {
-            if(!entry.getValue().getAsJsonObject().get("video_reference_uuid").toString().substring(1,entry.getValue().getAsJsonObject().get("video_reference_uuid").toString().length()-1).equals("No video_reference_uuid")){
-                entry.getValue().getAsJsonObject().add("annotations", getAnnotationsByVideoReferenceUUID(entry.getValue().getAsJsonObject().get("video_reference_uuid").toString(), allAnnotationData));
-                
-                if(entry.getValue().getAsJsonObject().get("annotations").getAsJsonArray().size()>0){
-                    JsonArray newSortedArray = sortAnnotationArray(entry.getValue().getAsJsonObject().get("annotations").getAsJsonArray());
+            if(!entry.getValue().getAsJsonObject().get("video_reference_uuid").getAsString().equals("No video_reference_uuid")){
+                String vid_ref_id = entry.getValue().getAsJsonObject().get("video_reference_uuid").getAsString();
+                String timestamp = entry.getValue().getAsJsonObject().get("timestamp").getAsString();
+                int duration = entry.getValue().getAsJsonObject().get("duration_millis").getAsInt();
+
+                JsonArray videoAnnotations = getAnnotationsByVidRefUUIDAndTimestampDuration(vid_ref_id, timestamp, duration , allAnnotationData);
+
+                if(videoAnnotations.size()>0){
+                    JsonArray newSortedArray = sortAnnotationArray(videoAnnotations);
                     entry.getValue().getAsJsonObject().add("annotations", newSortedArray);
                 }
 
@@ -196,10 +204,12 @@ public class DiveAnnotationService implements Service {
                 entry.getValue().getAsJsonObject().add("annotations", new JsonArray());
             }
             entry.getValue().getAsJsonObject().remove("video_reference_uuid");
+            entry.getValue().getAsJsonObject().remove("duration_millis");
         }
 
-        // add mapping to linksAndUUID
-        // i made an object in case i wanted to add another variable
+
+        // Add mapping to linksAndUUID
+        // Made an object in case we want to add another variable
         JsonObject mappingObj = new JsonObject();
         mappingObj.add("videoMapping", getOrderedListOfMp4Links(linksAndUUID));
         linksAndUUID.add("mappingObject", mappingObj);
@@ -207,24 +217,55 @@ public class DiveAnnotationService implements Service {
         return linksAndUUID;
     }
 
+
     /**
     * This function takes the video_reference_uuid. It will return a list (Gson list) of annotations
     * @param video_reference_uuid
     */
-    public JsonArray getAnnotationsByVideoReferenceUUID(String video_reference_uuid,JsonObject allAnnotationData){
+    private JsonArray getAnnotationsByVidRefUUIDAndTimestampDuration(String video_reference_uuid, String timestamp, int duration, JsonObject allAnnotationData){
         if(allAnnotationData.isJsonNull()) {
-            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotationsByVideoReferenceUUID()");
+            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotationsByVidRefUUIDAndTimestampDuration()");
             return null;
         }
 
         JsonArray allAnnotations = getAnnotations(allAnnotationData);
         JsonArray videoAnnotations = new JsonArray();
-        for(int i = 0; i < allAnnotations.size(); i++) {
-            if(video_reference_uuid.equals(allAnnotations.get(i).getAsJsonObject().get("video_reference_uuid").toString())){
-                videoAnnotations.add(allAnnotations.get(i).getAsJsonObject());
+
+        long startTime = getTimeInMillis(timestamp);
+        long endTime = startTime + duration;
+        
+        Set<String> annotationUUIDSet = new HashSet<String>();
+
+        // compare all annotations that have a time between the start and end time, and ones with matching vid reference ids
+        for (int i = 0; i < allAnnotations.size(); i ++) {
+            String curObsUUID = allAnnotations.get(i).getAsJsonObject().get("observation_uuid").getAsString();
+            String curVidRefUUID = allAnnotations.get(i).getAsJsonObject().get("video_reference_uuid").getAsString();
+            long curTimestamp = getTimeInMillis(allAnnotations.get(i).getAsJsonObject().get("recorded_timestamp").getAsString());
+
+            if(!annotationUUIDSet.contains(curObsUUID)){
+                if(curTimestamp <= endTime && curTimestamp >= startTime || video_reference_uuid.equals(curVidRefUUID)){
+                    videoAnnotations.add(allAnnotations.get(i).getAsJsonObject());
+                    annotationUUIDSet.add(curObsUUID);
+                }
             }
         }
+
         return videoAnnotations;
+    }
+
+    private long getTimeInMillis(String timestamp) {
+        long fixedTime = -1;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
+        try {
+            Date date = sdf.parse(timestamp);
+            Calendar calendar = Calendar.getInstance();    
+            calendar.setTime(date);
+            fixedTime = calendar.getTimeInMillis();
+        } catch(ParseException e) {
+            log.log(Level.WARNING, "Parsing timestamp error: " + timestamp + " - DiveAnnotationService.getAnnotationsByVidRefUUIDAndTimestampDuration()");
+            e.printStackTrace();
+        }
+        return fixedTime;
     }
 
     // I am looking for the video_uuid that has the .mov video file, not .mp4
@@ -238,11 +279,11 @@ public class DiveAnnotationService implements Service {
         String video_reference_uuid = "";
 
         for(int i = 0; i < allMedia.size(); i++) {
-            String curr_uuid = allMedia.get(i).getAsJsonObject().get("video_uuid").toString();
+            String curr_uuid = allMedia.get(i).getAsJsonObject().get("video_uuid").getAsString();
             if(video_uuid.equals(curr_uuid)){
-                String curr_uri = allMedia.get(i).getAsJsonObject().get("uri").toString();
-                if(curr_uri.charAt(curr_uri.length()-2)=='v') {
-                    video_reference_uuid = allMedia.get(i).getAsJsonObject().get("video_reference_uuid").toString();
+                String curr_uri = allMedia.get(i).getAsJsonObject().get("uri").getAsString();
+                if(curr_uri.charAt(curr_uri.length()-1)=='v') {
+                    video_reference_uuid = allMedia.get(i).getAsJsonObject().get("video_reference_uuid").getAsString();
                     break;
                 }
             }
