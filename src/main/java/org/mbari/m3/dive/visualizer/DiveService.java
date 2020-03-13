@@ -46,7 +46,7 @@ public class DiveService implements Service {
 
     @Override // this is called everytime this path is accessed
     public void update(Routing.Rules rules) {
-        // rules.get("/{rov}", this::getRovDives);
+
         rules.get("/getRovNames", this::getRovNames);
 
         rules.get("/getLatsAndLongs/{rov}/{diveNumber}", (req, res) -> {
@@ -83,20 +83,6 @@ public class DiveService implements Service {
         });
     }
 
-    /**
-     * Returns a list of dives for the given ROV.
-     * @param request
-     * @param response
-     */
-    private void getRovDives(ServerRequest request, ServerResponse response) {
-        String rov = request.path().param("rov");
-        DiveDAO dao = new DiveDAOImpl();
-        Collection<Dive> divesForRov = dao.findByPlatform(rov);
-        JSONObject json = new JSONObject();
-        json.put("Dives", divesForRov);
-        
-        response.send(json.toJSONString());
-    }
 
     private void getLatsAndLongs(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
         String rovName = request.path().param("rov");
@@ -175,24 +161,23 @@ public class DiveService implements Service {
         List<NavigationDatum> nav = dao1.fetchBestNavigationData(dive);
 
         JsonArray minAndDepth = new JsonArray();
-        JsonObject dateObj = new JsonObject();
+        String date = "";
 
         for(int i = 0 ; i < nav.size();i++){
             JsonObject newMinDepthObj = new JsonObject();
-            Date date = new Date(nav.get(i).getDate().getTime());
+            Date dateObj = new Date(nav.get(i).getDate().getTime());
             Calendar calendar = Calendar.getInstance();    
-            calendar.setTime(date);
+            calendar.setTime(dateObj);
 
-            if(i==0){
-                dateObj.addProperty("date", calendar.getTime().toString());        
-            }
+            // CONCAT BETTER
+            String[] dateSplit = calendar.getTime().toString().split(" ");
+            date = dateSplit[0] + dateSplit[1] + dateSplit[2] + dateSplit[5];
 
-            //newMinDepthObj.addProperty("minute", Double.toString(nav.get(i).getDate().getMinutes()));
-            newMinDepthObj.addProperty("hour", calendar.get(Calendar.MINUTE));
+            newMinDepthObj.addProperty("date", date);
+            newMinDepthObj.addProperty("minute", calendar.get(Calendar.MINUTE));
             newMinDepthObj.addProperty("depth", Double.toString(nav.get(i).getDepth()));
             minAndDepth.add(newMinDepthObj);
         }
-        
 
         response.headers().add("Access-Control-Allow-Origin", "*");
         response.headers().add("Access-Control-Allow-Headers", "*");
@@ -217,20 +202,22 @@ public class DiveService implements Service {
         List<NavigationDatum> nav = dao1.fetchBestNavigationData(dive);
 
         JsonArray hourAndDepth = new JsonArray();
-        JsonObject dateObj = new JsonObject();
+        String date = "";
 
         for(int i = 0 ; i < nav.size();i++){
             JsonObject newHourDepthObj = new JsonObject();
             
-            Date date = new Date(nav.get(i).getDate().getTime());
+            Date dateObj = new Date(nav.get(i).getDate().getTime());
             Calendar calendar = Calendar.getInstance();    
-            calendar.setTime(date);
+            calendar.setTime(dateObj);
 
-            if(i==0){
-                dateObj.addProperty("date", calendar.getTime().toString()); 
-            }
+        
+            // CONCAT BETTER
+            String[] dateSplit = calendar.getTime().toString().split(" ");
+            date = dateSplit[0] + dateSplit[1] + dateSplit[2] + dateSplit[5];
+            
 
-            // newMinDepthObj.addProperty("hour", Double.toString(nav.get(i).getDate().getHours()));
+            newHourDepthObj.addProperty("date", date);
             newHourDepthObj.addProperty("hour", calendar.get(Calendar.HOUR_OF_DAY));
             newHourDepthObj.addProperty("depth", Double.toString(nav.get(i).getDepth()));
             hourAndDepth.add(newHourDepthObj);
