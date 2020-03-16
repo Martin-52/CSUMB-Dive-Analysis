@@ -147,6 +147,9 @@ public class DiveAnnotationService implements Service {
         JsonArray videoLinks = getVideoLinks(allAnnotationData);
         JsonObject linksAndUUID = new JsonObject(); // linksAndUUID eventually become links and their annotations
         JsonArray mp4WithNoAvailableMov = new JsonArray();
+        JsonArray mp4MissingStartTimestamp = new JsonArray();
+        JsonArray mp4NoDurationMillis = new JsonArray();
+        
 
         for(int j = 0; j < videoLinks.size();j++) {
             for(int i = 0; i < allMedia.size(); i++) {   
@@ -166,56 +169,47 @@ public class DiveAnnotationService implements Service {
                             .get("video_uuid")
                             .getAsString() 
                         ,allAnnotationData);
-                    // length == 0 means that this mp4 video does not have a matching mov file. It needs a matching mov file 
-                    // for us to get the video_reference_uuid that will get us the matching annotations
-                    if(video_reference_uuid.length()==0){                                           
-                        linksAndUUID.get(uri)
-                            .getAsJsonObject()
-                            .addProperty("video_reference_uuid", "No video_reference_uuid");
-                        mp4WithNoAvailableMov.add(videoLinks.get(j).getAsString());
-                    } else { 
-                        linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid",video_reference_uuid);
-                    }
-                    linksAndUUID.get(uri).getAsJsonObject().addProperty("timestamp", 
-                        allMedia.get(i)
-                        .getAsJsonObject()
-                        .get("start_timestamp")
-                        .getAsString());
-                    linksAndUUID.get(uri).getAsJsonObject().addProperty("duration_millis", 
-                        allMedia.get(i)
-                        .getAsJsonObject()
-                        .get("duration_millis")
-                        .getAsString());
+
+
+                    if(video_reference_uuid.length()!=0){   
+                        if(!allMedia.get(i).getAsJsonObject().get("start_timestamp").isJsonNull()){
+                            if(!allMedia.get(i).getAsJsonObject().get("duration_millis").isJsonNull()){
+                                linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid",video_reference_uuid);
+
+                                linksAndUUID.get(uri).getAsJsonObject().addProperty("timestamp", allMedia.get(i)
+                                    .getAsJsonObject()
+                                    .get("start_timestamp")
+                                    .getAsString());
+                                
+                                linksAndUUID.get(uri).getAsJsonObject().addProperty("duration_millis", allMedia.get(i)
+                                    .getAsJsonObject()
+                                    .get("duration_millis")
+                                    .getAsString());
+
+                            }
+                        }                 
+                    } 
                 }
             }
         }
         
         // Gets and Orders annotations
         for (Entry<String, JsonElement> entry : linksAndUUID.entrySet()) {
-            if(!entry.getValue()
-            .getAsJsonObject()
-            .get("video_reference_uuid")
-            .getAsString()
-            .equals("No video_reference_uuid")){
+            String vid_ref_id = entry.getValue().getAsJsonObject().get("video_reference_uuid").getAsString();
+            String timestamp = entry.getValue().getAsJsonObject().get("timestamp").getAsString();
+            int duration = entry.getValue().getAsJsonObject().get("duration_millis").getAsInt();
 
-                String vid_ref_id = entry.getValue().getAsJsonObject().get("video_reference_uuid").getAsString();
-                String timestamp = entry.getValue().getAsJsonObject().get("timestamp").getAsString();
-                int duration = entry.getValue().getAsJsonObject().get("duration_millis").getAsInt();
+            JsonArray videoAnnotations = getAnnotationsByVidRefUUIDAndTimestampDuration(
+                vid_ref_id,
+                timestamp, 
+                duration, 
+                allAnnotationData);
 
-                JsonArray videoAnnotations = getAnnotationsByVidRefUUIDAndTimestampDuration(
-                    vid_ref_id,
-                    timestamp, 
-                    duration, 
-                    allAnnotationData);
-
-                if(videoAnnotations.size()>0){
-                    JsonArray newSortedArray = sortAnnotationArray(videoAnnotations);
-                    entry.getValue().getAsJsonObject().add("annotations", newSortedArray);
-                }
-
-            } else {
-                entry.getValue().getAsJsonObject().add("annotations", new JsonArray());
+            if(videoAnnotations.size()>0){
+                JsonArray newSortedArray = sortAnnotationArray(videoAnnotations);
+                entry.getValue().getAsJsonObject().add("annotations", newSortedArray);
             }
+
             entry.getValue().getAsJsonObject().remove("video_reference_uuid");
             entry.getValue().getAsJsonObject().remove("duration_millis");
         }
