@@ -125,10 +125,15 @@ public class DiveAnnotationService implements Service {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoLinks()");
             return null;
         }
+        if(allAnnotationData.get("media").isJsonNull()){
+            return new JsonArray();
+        }
+
         JsonArray allDiveVideos = new JsonArray();
 
         JsonArray media = allAnnotationData.getAsJsonArray("media");
         for (int i = 0; i < media.size(); i++) {
+            if(media.get(i).getAsJsonObject().get("uri").isJsonNull()) { continue; }
             String uri = media.get(i).getAsJsonObject().get("uri").getAsString();
             if (uri.charAt(uri.length() - 1) == '4') {
                 allDiveVideos.add(uri);
@@ -145,20 +150,17 @@ public class DiveAnnotationService implements Service {
         }
         JsonArray allMedia = getMedia(allAnnotationData);
         JsonArray videoLinks = getVideoLinks(allAnnotationData);
-        JsonObject linksAndUUID = new JsonObject(); // linksAndUUID eventually become links and their annotations
-        JsonArray mp4WithNoAvailableMov = new JsonArray();
-        JsonArray mp4MissingStartTimestamp = new JsonArray();
-        JsonArray mp4NoDurationMillis = new JsonArray();
-        
+        JsonObject linksAndUUID = new JsonObject(); // linksAndUUID eventually becomes links and their annotations
 
         for(int j = 0; j < videoLinks.size();j++) {
             for(int i = 0; i < allMedia.size(); i++) {   
+                if(allMedia.get(i).getAsJsonObject().get("uri").isJsonNull()) { continue; }
+                if(allMedia.get(i).getAsJsonObject().get("video_uuid").isJsonNull()) { continue; }
+
+
                 String video_reference_uuid = "";
-                if(videoLinks.get(j).getAsString().equals(
-                    allMedia.get(i)
-                        .getAsJsonObject()
-                        .get("uri")
-                        .getAsString())){ 
+                String cur_uri = allMedia.get(i).getAsJsonObject().get("uri").getAsString();
+                if(videoLinks.get(j).getAsString().equals(cur_uri)){ 
 
                     String uri = videoLinks.get(j).getAsString();
                     linksAndUUID.add(uri, new JsonObject());
@@ -169,7 +171,6 @@ public class DiveAnnotationService implements Service {
                             .get("video_uuid")
                             .getAsString() 
                         ,allAnnotationData);
-
 
                     if(video_reference_uuid.length()!=0){   
                         if(!allMedia.get(i).getAsJsonObject().get("start_timestamp").isJsonNull()){
@@ -246,6 +247,10 @@ public class DiveAnnotationService implements Service {
         // Compare all annotations that have a time between the start and end time, 
         // and ones with matching vid reference ids
         for (int i = 0; i < allAnnotations.size(); i ++) {
+            if(allAnnotations.get(i).getAsJsonObject().get("observation_uuid").isJsonNull()) { continue; }
+            if(allAnnotations.get(i).getAsJsonObject().get("video_reference_uuid").isJsonNull()) { continue; }
+            if(allAnnotations.get(i).getAsJsonObject().get("recorded_timestamp").isJsonNull()) { continue; }
+
             String curObsUUID = allAnnotations.get(i)
                 .getAsJsonObject()
                 .get("observation_uuid")
@@ -298,11 +303,16 @@ public class DiveAnnotationService implements Service {
         String video_reference_uuid = "";
 
         for(int i = 0; i < allMedia.size(); i++) {
+            if(allMedia.get(i).getAsJsonObject().get("video_uuid").isJsonNull()) { continue; }
+            if(allMedia.get(i).getAsJsonObject().get("uri").isJsonNull()) { continue; }
+            if(allMedia.get(i).getAsJsonObject().get("video_reference_uuid").isJsonNull()) { continue; }
+
             String curr_uuid = allMedia.get(i)
                 .getAsJsonObject()
                 .get("video_uuid")
                 .getAsString();
             if(video_uuid.equals(curr_uuid)){
+                
                 String curr_uri = allMedia.get(i)
                     .getAsJsonObject()
                     .get("uri")
@@ -410,6 +420,9 @@ public class DiveAnnotationService implements Service {
     }
 
     private JsonArray getOrderedListOfMp4Links(JsonObject linksAndUUID){
+        if(linksAndUUID.size()==0){
+            return new JsonArray();
+        }
         // ordering the links by their timestamps
         List<JsonObject> mapping = new ArrayList<JsonObject>();
         
