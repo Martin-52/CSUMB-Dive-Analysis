@@ -161,7 +161,6 @@ public class DiveAnnotationService implements Service {
                 String cur_uri = allMedia.get(i).getAsJsonObject().get("uri").getAsString();
                 if(videoLinks.get(j).getAsString().equals(cur_uri)){ 
 
-
                     video_reference_uuid = getVideoReferenceUUID(
                         allMedia.get(i)
                             .getAsJsonObject()
@@ -172,10 +171,6 @@ public class DiveAnnotationService implements Service {
                     if(video_reference_uuid.length()!=0){   
                         if(!allMedia.get(i).getAsJsonObject().get("start_timestamp").isJsonNull()){
                             if(!allMedia.get(i).getAsJsonObject().get("duration_millis").isJsonNull()){
-                                System.out.println(video_reference_uuid);
-                                System.out.println(allMedia.get(i).getAsJsonObject().get("start_timestamp").getAsString());
-                                System.out.println(allMedia.get(i).getAsJsonObject().get("duration_millis").getAsString());
-                                System.out.println("========================================================");
 
                                 String uri = videoLinks.get(j).getAsString();                                
                                 JsonObject tempObj = new JsonObject();
@@ -185,20 +180,6 @@ public class DiveAnnotationService implements Service {
                                 tempObj.addProperty("duration_millis", allMedia.get(i).getAsJsonObject().get("duration_millis").getAsString());
 
                                 linksAndUUID.add(uri, tempObj);
-
-                                // linksAndUUID.add(uri, new JsonObject());
-                                // linksAndUUID.get(uri).getAsJsonObject().addProperty("video_reference_uuid",video_reference_uuid);
-
-                                // linksAndUUID.get(uri).getAsJsonObject().addProperty("timestamp", allMedia.get(i)
-                                //     .getAsJsonObject()
-                                //     .get("start_timestamp")
-                                //     .getAsString());
-                                
-                                // linksAndUUID.get(uri).getAsJsonObject().addProperty("duration_millis", allMedia.get(i)
-                                //     .getAsJsonObject()
-                                //     .get("duration_millis")
-                                //     .getAsString());
-
                             }
                         }                 
                     } 
@@ -215,30 +196,19 @@ public class DiveAnnotationService implements Service {
             String vid_ref_id = entry.getValue().getAsJsonObject().get("video_reference_uuid").getAsString();
             String timestamp = entry.getValue().getAsJsonObject().get("timestamp").getAsString();
             int duration = entry.getValue().getAsJsonObject().get("duration_millis").getAsInt();
-            System.out.println(vid_ref_id);
-            System.out.println(timestamp);
-            System.out.println(duration);
-            System.out.println("");
-            System.out.println("    getting vid annotations");
+            
             JsonArray videoAnnotations = getAnnotationsByVidRefUUIDAndTimestampDuration(
                 vid_ref_id,
                 timestamp, 
                 duration, 
                 allAnnotationData);
-            System.out.println("    got vid annotations");
             if(videoAnnotations.size()>0){
                 JsonArray newSortedArray = sortAnnotationArray(videoAnnotations);
                 entry.getValue().getAsJsonObject().add("annotations", newSortedArray);
             }
-            System.out.println("removing crap");
             entry.getValue().getAsJsonObject().remove("video_reference_uuid");
             entry.getValue().getAsJsonObject().remove("duration_millis");
-            System.out.println("removed crap");
-            System.out.println("========================================================");
-            
         }
-        System.out.println("");
-        System.out.println("finished getting annotations");
 
         // Add mapping to linksAndUUID
         // Made an object in case we want to add another variable
