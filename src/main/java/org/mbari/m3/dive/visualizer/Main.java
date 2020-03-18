@@ -1,6 +1,8 @@
 package org.mbari.m3.dive.visualizer;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.logging.LogManager;
 
 import com.google.common.collect.ImmutableBiMap.Builder;
 
@@ -26,6 +28,15 @@ public final class Main {
      */
     public static void main(final String[] args) throws IOException {
         startServer();
+    }
+
+    /**
+     * Configure logging from logging.properties file.
+     */
+    private static void setupLogging() throws IOException {
+        try (InputStream is = Main.class.getResourceAsStream("/logging.properties")) {
+            LogManager.getLogManager().readConfiguration(is);
+        }
     }
 
     /**
@@ -72,6 +83,7 @@ public final class Main {
         return Routing.builder()
                 .register("/dive", new DiveService())
                 .register("/annotations", new DiveAnnotationService())
+                .register("/photoannotations", new PhotoAnnotationService())
                 .build();
     }
 }
