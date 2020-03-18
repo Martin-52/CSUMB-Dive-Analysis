@@ -20,6 +20,9 @@ import org.mbari.expd.jdbc.BaseDAOImpl;
 import org.mbari.expd.jdbc.DiveDAOImpl;
 import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
 import org.mbari.expd.NavigationDatum;
+import org.mbari.expd.CtdDatum;
+import org.mbari.expd.CtdDatumDAO;
+import org.mbari.expd.jdbc.CtdDatumDAOImpl;
 
 public class DiveService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
@@ -64,6 +67,14 @@ public class DiveService implements Service {
         rules.get("/getDiveDates/{rov}/{diveNumber}", (req, res) -> {
             try {
                 getDiveDates(req, res);
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        });
+        rules.get("/getCTD/{rov}/{diveNumber}", (req, res) -> {
+            try {
+                getCTD(req, res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -277,5 +288,37 @@ public class DiveService implements Service {
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(dates.toString());
+    }
+
+    private void getCTD(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        DiveDAO dao = new DiveDAOImpl();
+        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+
+        CtdDatumDAO ctdDao = new CtdDatumDAOImpl();
+        List<CtdDatum> ctd = ctdDao.fetchCtdData(dive);
+
+        if(dive == null || ctd == null){
+            System.out.println("getCTD(): null dive");
+            return;
+        }
+
+        JsonArray ctdArray = new JsonArray();
+
+        for(int i = 0 ; i < ctd.size();i++){
+            JsonObject ctdObject = new JsonObject();
+            ctdObject.addProperty("salinity", ctd.get(i).getSalinity());
+            ctdObject.addProperty("pressure", ctd.get(i).getPressure());
+            ctdObject.addProperty("temperature", ctd.get(i).getTemperature());
+            ctdArray.add(ctdObject);
+        }
+
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(ctdArray.toString());
     }
 }
