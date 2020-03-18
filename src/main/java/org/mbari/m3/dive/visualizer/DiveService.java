@@ -290,4 +290,36 @@ public class DiveService implements Service {
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(dates.toString());
     }
+    
+    private void getCTD(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        DiveDAO dao = new DiveDAOImpl();
+        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+
+        CtdDatumDAO ctdDao = new CtdDatumDAOImpl();
+        List<CtdDatum> ctd = ctdDao.fetchCtdData(dive);
+
+        if(dive == null || ctd == null){
+            System.out.println("getCTD(): null dive");
+            return;
+        }
+
+        JsonArray ctdArray = new JsonArray();
+
+        for(int i = 0 ; i < ctd.size();i++){
+            JsonObject ctdObject = new JsonObject();
+            ctdObject.addProperty("salinity", ctd.get(i).getSalinity());
+            ctdObject.addProperty("pressure", ctd.get(i).getPressure());
+            ctdObject.addProperty("temperature", ctd.get(i).getTemperature());
+            ctdArray.add(ctdObject);
+        }
+
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(ctdArray.toString());
+    }
 }
