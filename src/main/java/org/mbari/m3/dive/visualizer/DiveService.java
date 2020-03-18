@@ -14,9 +14,13 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import org.mbari.expd.CtdDatum;
+import org.mbari.expd.CtdDatumDAO;
 import org.mbari.expd.Dive;
 import org.mbari.expd.DiveDAO;
 import org.mbari.expd.jdbc.BaseDAOImpl;
+import org.mbari.expd.jdbc.CtdDatumDAOImpl;
 import org.mbari.expd.jdbc.DiveDAOImpl;
 import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
 import org.mbari.expd.NavigationDatum;
@@ -64,6 +68,14 @@ public class DiveService implements Service {
         rules.get("/getDiveDates/{rov}/{diveNumber}", (req, res) -> {
             try {
                 getDiveDates(req, res);
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        });
+        rules.get("/getCTD/{rov}/{diveNumber}", (req, res) -> {
+            try {
+                getCTD(req, res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -278,6 +290,7 @@ public class DiveService implements Service {
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(dates.toString());
     }
+<<<<<<< Updated upstream
     
     /**
      * Returns a list of ROV names.
@@ -289,10 +302,43 @@ public class DiveService implements Service {
         for (String name: BaseDAOImpl.getAllRovNames()) {
             arr.add(name);
         }
+=======
+
+    private void getCTD(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        DiveDAO dao = new DiveDAOImpl();
+        Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+
+        CtdDatumDAO ctdDao = new CtdDatumDAOImpl();
+        List<CtdDatum> ctd = ctdDao.fetchCtdData(dive);
+
+        if(dive == null || ctd == null){
+            System.out.println("getCTD(): null dive");
+            return;
+        }
+
+        JsonArray ctdArray = new JsonArray();
+
+        for(int i = 0 ; i < ctd.size();i++){
+            JsonObject ctdObject = new JsonObject();
+            
+            ctdObject.addProperty("salinity", ctd.get(i).getSalinity());
+            ctdObject.addProperty("pressure", ctd.get(i).getPressure());
+            ctdObject.addProperty("temperature", ctd.get(i).getTemperature());
+            ctdArray.add(ctdObject);
+        }
+
+>>>>>>> Stashed changes
         response.headers().add("Access-Control-Allow-Origin", "*");
         response.headers().add("Access-Control-Allow-Headers", "*");
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+<<<<<<< Updated upstream
         response.send(arr.toString());
+=======
+        response.send(ctdArray.toString());
+>>>>>>> Stashed changes
     }
 }
