@@ -24,7 +24,7 @@ import org.mbari.expd.NavigationDatum;
 public class DiveService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
 
-    @Override // this is called everytime this path is accessed
+    @Override
     public void update(Routing.Rules rules) {
 
         rules.get("/getRovNames", this::getRovNames);
@@ -277,5 +277,22 @@ public class DiveService implements Service {
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(dates.toString());
+    }
+    
+    /**
+     * Returns a list of ROV names.
+     * @param request
+     * @param response
+     */
+    private void getRovNames(ServerRequest request, ServerResponse response) {
+        JsonArray arr = new JsonArray();
+        for (String name: BaseDAOImpl.getAllRovNames()) {
+            arr.add(name);
+        }
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(arr.toString());
     }
 }
