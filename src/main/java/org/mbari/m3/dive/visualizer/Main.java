@@ -84,6 +84,7 @@ public final class Main {
                 .register("/dive", new DiveService())
                 .register("/annotations", new DiveAnnotationService())
                 .register("/photoannotations", new PhotoAnnotationService())
+                .register("/dataerror", new DataErrorService())
                 .build();
     }
 }

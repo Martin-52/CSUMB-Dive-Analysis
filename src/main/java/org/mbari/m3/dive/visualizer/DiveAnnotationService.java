@@ -95,7 +95,7 @@ public class DiveAnnotationService implements Service {
      * @param allAnnotationData
      */
     private JsonArray getAnnotations(JsonObject allAnnotationData) {
-        if (allAnnotationData.isJsonNull()) {
+        if (allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotations()");
             return null;
         }
@@ -108,7 +108,7 @@ public class DiveAnnotationService implements Service {
      * @param allAnnotationData
      */
     private JsonArray getMedia(JsonObject allAnnotationData) {
-        if (allAnnotationData.isJsonNull()) {
+        if (allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getMedia()");
             return null;
         }
@@ -121,11 +121,11 @@ public class DiveAnnotationService implements Service {
      * @param allAnnotationData
      */
     private JsonArray getVideoLinks(JsonObject allAnnotationData) {
-        if (allAnnotationData.isJsonNull()) {
+        if (allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoLinks()");
             return null;
         }
-        if(allAnnotationData.get("media").isJsonNull()){
+        if(allAnnotationData.get("media") == null){
             return new JsonArray();
         }
 
@@ -133,7 +133,7 @@ public class DiveAnnotationService implements Service {
 
         JsonArray media = allAnnotationData.getAsJsonArray("media");
         for (int i = 0; i < media.size(); i++) {
-            if(media.get(i).getAsJsonObject().get("uri").isJsonNull()) { continue; }
+            if(media.get(i).getAsJsonObject().get("uri") == null) { continue; }
             String uri = media.get(i).getAsJsonObject().get("uri").getAsString();
             if (uri.charAt(uri.length() - 1) == '4') {
                 allDiveVideos.add(uri);
@@ -144,7 +144,7 @@ public class DiveAnnotationService implements Service {
 
 
     private JsonObject getVidsAndAnnotations(JsonObject allAnnotationData) {
-        if (allAnnotationData.isJsonNull()) {
+        if (allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoLinksAndAnnotations()");
             return null;
         }
@@ -154,8 +154,8 @@ public class DiveAnnotationService implements Service {
 
         for(int j = 0; j < videoLinks.size();j++) {
             for(int i = 0; i < allMedia.size(); i++) {   
-                if(allMedia.get(i).getAsJsonObject().get("uri").isJsonNull()) { continue; }
-                if(allMedia.get(i).getAsJsonObject().get("video_uuid").isJsonNull()) { continue; }
+                if(allMedia.get(i).getAsJsonObject().get("uri") == null) { continue; }
+                if(allMedia.get(i).getAsJsonObject().get("video_uuid") == null) { continue; }
 
                 String video_reference_uuid = "";
                 String cur_uri = allMedia.get(i).getAsJsonObject().get("uri").getAsString();
@@ -169,8 +169,8 @@ public class DiveAnnotationService implements Service {
                         ,allAnnotationData);
 
                     if(video_reference_uuid.length()!=0){   
-                        if(!allMedia.get(i).getAsJsonObject().get("start_timestamp").isJsonNull()){
-                            if(!allMedia.get(i).getAsJsonObject().get("duration_millis").isJsonNull()){
+                        if(allMedia.get(i).getAsJsonObject().get("start_timestamp") != null){
+                            if(allMedia.get(i).getAsJsonObject().get("duration_millis") != null){
 
                                 String uri = videoLinks.get(j).getAsString();                                
                                 JsonObject tempObj = new JsonObject();
@@ -226,7 +226,7 @@ public class DiveAnnotationService implements Service {
     private JsonArray getAnnotationsByVidRefUUIDAndTimestampDuration(
         String video_reference_uuid, String timestamp, int duration, JsonObject allAnnotationData){
 
-        if(allAnnotationData.isJsonNull()) {
+        if(allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotationsByVidRefUUIDAndTimestampDuration()");
             return null;
         }
@@ -242,9 +242,9 @@ public class DiveAnnotationService implements Service {
         // Compare all annotations that have a time between the start and end time, 
         // and ones with matching vid reference ids
         for (int i = 0; i < allAnnotations.size(); i ++) {
-            if(allAnnotations.get(i).getAsJsonObject().get("observation_uuid").isJsonNull()) { continue; }
-            if(allAnnotations.get(i).getAsJsonObject().get("video_reference_uuid").isJsonNull()) { continue; }
-            if(allAnnotations.get(i).getAsJsonObject().get("recorded_timestamp").isJsonNull()) { continue; }
+            if(allAnnotations.get(i).getAsJsonObject().get("observation_uuid") == null) { continue; }
+            if(allAnnotations.get(i).getAsJsonObject().get("video_reference_uuid") == null) { continue; }
+            if(allAnnotations.get(i).getAsJsonObject().get("recorded_timestamp") == null) { continue; }
 
             String curObsUUID = allAnnotations.get(i)
                 .getAsJsonObject()
@@ -289,7 +289,7 @@ public class DiveAnnotationService implements Service {
 
     // I am looking for the video_uuid that has the .mov video file, not .mp4
     private String getVideoReferenceUUID(String video_uuid,JsonObject allAnnotationData){
-        if(allAnnotationData.isJsonNull()) {
+        if(allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getVideoReferenceUUID()");
             return null;
         }
@@ -298,9 +298,9 @@ public class DiveAnnotationService implements Service {
         String video_reference_uuid = "";
 
         for(int i = 0; i < allMedia.size(); i++) {
-            if(allMedia.get(i).getAsJsonObject().get("video_uuid").isJsonNull()) { continue; }
-            if(allMedia.get(i).getAsJsonObject().get("uri").isJsonNull()) { continue; }
-            if(allMedia.get(i).getAsJsonObject().get("video_reference_uuid").isJsonNull()) { continue; }
+            if(allMedia.get(i).getAsJsonObject().get("video_uuid") == null) { continue; }
+            if(allMedia.get(i).getAsJsonObject().get("uri") == null) { continue; }
+            if(allMedia.get(i).getAsJsonObject().get("video_reference_uuid") == null) { continue; }
 
             String curr_uuid = allMedia.get(i)
                 .getAsJsonObject()
@@ -325,7 +325,7 @@ public class DiveAnnotationService implements Service {
     } 
     
     private JsonArray getROVPathFromAnnotations(JsonObject allAnnotationData) {
-        if(allAnnotationData.isJsonNull()) {
+        if(allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getROVPathFromAnnotations()");
             return null;
         }
