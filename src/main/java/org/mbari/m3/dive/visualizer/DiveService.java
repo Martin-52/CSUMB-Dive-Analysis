@@ -33,7 +33,7 @@ public class DiveService implements Service {
 
         rules.get("/getRovNames", this::getRovNames);
 
-        rules.get("/getLatsAndLongs/{rov}/{diveNumber}", (req, res) -> {
+        rules.get("/getlatsandlongs/{rov}/{diveNumber}", (req, res) -> {
             try {
                 getLatsAndLongs(req, res);
             } catch (IOException | InterruptedException e) {
@@ -41,7 +41,7 @@ public class DiveService implements Service {
                 e.printStackTrace();
             }
         });
-        rules.get("/checkDiveNumber/{rov}/{diveNumber}", (req, res) -> {
+        rules.get("/checkdivenumber/{rov}/{diveNumber}", (req, res) -> {
             try {
                 checkDiveNumber(req, res);
             } catch (IOException | InterruptedException e) {
@@ -49,7 +49,7 @@ public class DiveService implements Service {
                 e.printStackTrace();
             }
         });
-        rules.get("/getMinAndDepth/{rov}/{diveNumber}", (req, res) -> {
+        rules.get("/getminanddepth/{rov}/{diveNumber}", (req, res) -> {
             try {
                 getMinAndDepth(req, res);
             } catch (IOException | InterruptedException e) {
@@ -57,7 +57,7 @@ public class DiveService implements Service {
                 e.printStackTrace();
             }
         });
-        rules.get("/getHourAndDepth/{rov}/{diveNumber}", (req, res) -> {
+        rules.get("/gethouranddepth/{rov}/{diveNumber}", (req, res) -> {
             try {
                 getHourAndDepth(req, res);
             } catch (IOException | InterruptedException e) {
@@ -65,7 +65,7 @@ public class DiveService implements Service {
                 e.printStackTrace();
             }
         });
-        rules.get("/getDiveDates/{rov}/{diveNumber}", (req, res) -> {
+        rules.get("/getdivedates/{rov}/{diveNumber}", (req, res) -> {
             try {
                 getDiveDates(req, res);
             } catch (IOException | InterruptedException e) {
@@ -73,7 +73,7 @@ public class DiveService implements Service {
                 e.printStackTrace();
             }
         });
-        rules.get("/getCTD/{rov}/{diveNumber}", (req, res) -> {
+        rules.get("/getctd/{rov}/{diveNumber}", (req, res) -> {
             try {
                 getCTD(req, res);
             } catch (IOException | InterruptedException e) {
