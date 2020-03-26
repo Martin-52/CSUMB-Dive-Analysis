@@ -41,8 +41,6 @@ public class DataErrorService implements Service {
     @Override
     public void update(Routing.Rules rules) {
 
-        // rules.get("/getRovNames", this::getRovNames);
-
         rules.get("/timestamps/{rov}/{diveNumber}", (req, res) -> {
             try {
                 missingTimestampsHttpResponse(req, res);
@@ -99,7 +97,7 @@ public class DataErrorService implements Service {
 
     /**
      * Sends http request to retrieve the json for the given rov and dive number
-     * 
+     * returns MBARI information on dive. This contains a json tree with annotations and media
      * @param rovName
      * @param diveNumber
      */
@@ -122,6 +120,11 @@ public class DataErrorService implements Service {
         return (new JsonParser().parse(response.body()).getAsJsonObject());
     }
 
+    /**
+     * Sends http response with Json Array of annotations with missing timestamps
+     * @param request
+     * @param response
+     */
     private void missingTimestampsHttpResponse(ServerRequest request, ServerResponse response)
             throws IOException, InterruptedException {
         String rovName = request.path().param("rov");
@@ -138,6 +141,11 @@ public class DataErrorService implements Service {
         response.send(missingTimestamps.toString());
     }
 
+    /**
+     * Sends http response with Json Array of annotations with missing ancillary data
+     * @param request
+     * @param response
+     */
     private void missingAncillaryHttpResponse(ServerRequest request, ServerResponse response)
             throws IOException, InterruptedException {
         String rovName = request.path().param("rov");
@@ -154,6 +162,12 @@ public class DataErrorService implements Service {
         response.send(missingAncillary.toString());
     }
 
+    /**
+     * Sends http response of a double (amount of footage time / time of dive) of the ratio of camera log footage covered in dive.
+     * @param request
+     * @param response
+     * @param isHd  quality of footage
+     */
     private void cameraLogCoverageHttpResponse(ServerRequest request, ServerResponse response, boolean isHd) throws IOException, InterruptedException {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
@@ -167,6 +181,11 @@ public class DataErrorService implements Service {
         response.send(Double.toString(coverageRatio));
     }
 
+    /**
+     * Sends http response of a double (amount of ctd time / time of dive) of the ratio of ctd logs covered in dive.
+     * @param request
+     * @param response
+     */
     private void ctdLogCoverageHttpResponse(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
@@ -180,6 +199,11 @@ public class DataErrorService implements Service {
         response.send(Double.toString(coverageRatio));
     }
 
+    /**
+     * Sends http response of a double (amount of nav time / time of dive) of the ratio of nav logs covered in dive.
+     * @param request
+     * @param response
+     */
     private void navLogCoverageHttpResponse(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
@@ -195,7 +219,6 @@ public class DataErrorService implements Service {
 
     /**
      * Returns a JsonArray of all Annotations from specific dive
-     * 
      * @param allAnnotationData
      */
     private JsonArray getAnnotations(JsonObject allAnnotationData) {

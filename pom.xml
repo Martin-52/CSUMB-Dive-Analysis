@@ -27,23 +27,6 @@
             <name>bintray</name>
             <url>https://dl.bintray.com/org-mbari/maven</url>
         </repository>
-
-        <!-- <repository>
-            <snapshots>
-                <enabled>
-                  false
-                </enabled>
-            </snapshots>
-            <id>
-                bintray-org-mbari-maven
-            </id>
-            <name>
-                bintray
-            </name>
-            <url>
-                https://dl.bintray.com/org-mbari/maven
-            </url>
-        </repository> -->
     </repositories>
 
     <dependencies>
