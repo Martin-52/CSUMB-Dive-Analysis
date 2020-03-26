@@ -58,7 +58,6 @@ public class DiveAnnotationService implements Service {
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
         JsonObject allAnnotationData = getDiveDataThroughHttpRequest(rovName, diveNumber);
-
         JsonObject linksAndAnnotations = getVidsAndAnnotations(allAnnotationData);
 
         response.headers().add("Access-Control-Allow-Origin", "*");
@@ -78,7 +77,9 @@ public class DiveAnnotationService implements Service {
     private JsonObject getDiveDataThroughHttpRequest(String rovName, int diveNumber) throws IOException, InterruptedException {
 
         final HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
-
+        if(rovName.contains(" ")){// These are for rov names with a space (i.e Mini Rov & Doc Rickett)
+            rovName = rovName.replace(" ","%20");
+        }
         String path = "http://dsg.mbari.org/references/query/dive/" + rovName + "%20" + diveNumber;
 
         HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(path))
@@ -186,10 +187,6 @@ public class DiveAnnotationService implements Service {
                 }
             }
         }
-        
-        System.out.println("");
-        System.out.println("Got links and vidUUID, timestamp, duration millis");
-        System.out.println("");
 
         // Gets and Orders annotations
         for (Entry<String, JsonElement> entry : linksAndUUID.entrySet()) {
@@ -212,8 +209,6 @@ public class DiveAnnotationService implements Service {
 
         // Add mapping to linksAndUUID
         // Made an object in case we want to add another variable
-        //JsonObject mappingObj = new JsonObject();
-        //mappingObj.add("videoMapping", getOrderedListOfMp4Links(linksAndUUID));
         linksAndUUID.add("videoOrdering",getOrderedListOfMp4Links(linksAndUUID));
 
         return linksAndUUID;

@@ -71,6 +71,9 @@ public class PhotoAnnotationService implements Service {
     private JsonObject getAnnotationData(String rovName, int diveNumber) throws IOException, InterruptedException {
 
         final HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+        if(rovName.contains(" ")){// These are for rov names with a space (i.e Mini Rov & Doc Rickett)
+            rovName = rovName.replace(" ","%20");
+        }
         String path = "http://dsg.mbari.org/references/query/dive/" + rovName + "%20" + diveNumber;
 
         HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(path))

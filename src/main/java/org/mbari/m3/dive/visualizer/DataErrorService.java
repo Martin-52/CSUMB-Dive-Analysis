@@ -1,10 +1,25 @@
 package org.mbari.m3.dive.visualizer;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
+import io.helidon.webserver.Routing;
+import io.helidon.webserver.ServerRequest;
+import io.helidon.webserver.ServerResponse;
+import io.helidon.webserver.Service;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.mbari.expd.CameraDatum;
 import org.mbari.expd.CameraDatumDAO;
 import org.mbari.expd.CtdDatum;
@@ -16,34 +31,9 @@ import org.mbari.expd.jdbc.CameraDatumDAOImpl;
 import org.mbari.expd.jdbc.CtdDatumDAOImpl;
 import org.mbari.expd.jdbc.DiveDAOImpl;
 import org.mbari.expd.jdbc.NavigationDatumDAOImpl;
-
-import io.helidon.webserver.Routing;
-import io.helidon.webserver.ServerRequest;
-import io.helidon.webserver.ServerResponse;
-import io.helidon.webserver.Service;
 import mbarix4j.math.Matlib;
 import mbarix4j.math.Statlib;
 
-import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.URI;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.Map.Entry;
-import java.util.function.Function;
-import java.util.Set;
 
 public class DataErrorService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
@@ -73,32 +63,38 @@ public class DataErrorService implements Service {
 
         rules.get("/navcoverage/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getNavCoverageRatioOfDive(req, res);
+                navLogCoverageHttpResponse(req, res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
-            }
+            } 
         });
-
 
         rules.get("/ctdcoverage/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getCTDCoverageRatioOfDive(req, res);
+                ctdLogCoverageHttpResponse(req, res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
-            }
+            } 
         });
 
-        rules.get("/camcoverage/{rov}/{diveNumber}", (req, res) -> {
+        rules.get("/camcoveragehd/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getCameraLogCoverageRatioOfDive(req, res);
+                cameraLogCoverageHttpResponse(req, res, true);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
-            }
+            } 
         });
-        
+        rules.get("/camcoveragesd/{rov}/{diveNumber}", (req, res) -> {
+            try {
+                cameraLogCoverageHttpResponse(req, res, false);
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } 
+        });
     }
 
     /**
@@ -107,15 +103,19 @@ public class DataErrorService implements Service {
      * @param rovName
      * @param diveNumber
      */
-    private JsonObject getDiveDataThroughHttpRequest(String rovName, int diveNumber)
-            throws IOException, InterruptedException {
-
+    private JsonObject getDiveDataThroughHttpRequest(String rovName, int diveNumber) throws IOException, InterruptedException {
         final HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
-
+        if(rovName.contains(" ")){// These are for rov names with a space (i.e Mini Rov & Doc Rickett)
+            rovName = rovName.replace(" ","%20");
+        }
         String path = "http://dsg.mbari.org/references/query/dive/" + rovName + "%20" + diveNumber;
 
-        HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(path))
-                .setHeader("User-Agent", "Java 11 HttpClient Bot").build();
+        HttpRequest request = HttpRequest
+            .newBuilder()
+            .GET()
+            .uri(URI.create(path))
+            .setHeader("User-Agent", "Java 11 HttpClient Bot")
+            .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -152,6 +152,45 @@ public class DataErrorService implements Service {
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.send(missingAncillary.toString());
+    }
+
+    private void cameraLogCoverageHttpResponse(ServerRequest request, ServerResponse response, boolean isHd) throws IOException, InterruptedException {
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        double coverageRatio = getCameraLogCoverageRatioOfDive(rovName, diveNumber, isHd);
+
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(Double.toString(coverageRatio));
+    }
+
+    private void ctdLogCoverageHttpResponse(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        double coverageRatio = getCTDCoverageRatioOfDive(rovName, diveNumber);
+
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(Double.toString(coverageRatio));
+    }
+
+    private void navLogCoverageHttpResponse(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        double coverageRatio = getNavCoverageRatioOfDive(rovName, diveNumber);
+
+        response.headers().add("Access-Control-Allow-Origin", "*");
+        response.headers().add("Access-Control-Allow-Headers", "*");
+        response.headers().add("Access-Control-Allow-Credentials", "true");
+        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        response.send(Double.toString(coverageRatio));
     }
 
     /**
@@ -200,39 +239,29 @@ public class DataErrorService implements Service {
         return annotationsWithMissingData;
     }
 
-   ////////////////////////////////////////////////////////////
-    private void getCameraLogCoverageRatioOfDive(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-
+    private double getCameraLogCoverageRatioOfDive(String rovName, int diveNumber, boolean isHd){
         DiveDAO dao = new DiveDAOImpl();
         // returns null if no match is found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
-        if(dive == null) {
-            log.log(Level.WARNING, "getCTDCoverageRatioOfDive(): null dive - DiveErrorService");
-            return;
+        double coverageRatio = 0.0;
+
+        if(dive != null) {
+            CameraDatumDAO daoCam = new CameraDatumDAOImpl();
+            List<CameraDatum> camSamples = null;
+            try {
+                camSamples = daoCam.fetchCameraData(dive,isHd);
+            } catch (Exception e){
+                log.log(Level.WARNING, "DiveErrorService.getCameraLogCoverageRatioOfDive(): Unable to retrieve camera data");
+            }
+            if(camSamples != null){
+                double coverage = camSamples.size()*sampleIntervalCam(camSamples);
+                double diveLengthSecs = (dive.getEndDate().getTime() - dive.getStartDate().getTime())/1000; 
+                coverageRatio = coverage/diveLengthSecs;
+            }    
+        } else {
+            log.log(Level.WARNING, "DiveErrorService.getCameraLogCoverageRatioOfDive(): null dive");
         }
-
-        CameraDatumDAO daoCam = new CameraDatumDAOImpl();
-        List<CameraDatum> camSamples = daoCam.fetchCameraData(dive, true);
-
-
-        double coverage = camSamples.size()*sampleIntervalCam(camSamples);
-        double diveLengthSecs = (dive.getEndDate().getTime() - dive.getStartDate().getTime())/1000; 
-        double coverageRatio = coverage/diveLengthSecs;
-
-        // System.out.println("percent of dive covered: " + coverageRatio + "%");
-        // System.out.println("coverage: " + coverage + " = sample size: " + camSamples.size() + " * sample interval: " + sampleIntervalCam(camSamples));
-        // System.out.println("dive end date: " + dive.getEndDate());
-        // System.out.println("dive start date: " + dive.getStartDate());
-        // System.out.println("dive length in seconds: " + diveLengthSecs);
-        // System.out.println("sample interval: " + sampleIntervalCam(camSamples));
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(Double.toString(coverageRatio));
+        return coverageRatio;
     }
 
     private double sampleIntervalCam(List<CameraDatum> samples) {
@@ -272,39 +301,29 @@ public class DataErrorService implements Service {
         return seconds;
     }
 
-
-    ////////////////////////////////////////////////////////////
-    private void getCTDCoverageRatioOfDive(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-
+    private double getCTDCoverageRatioOfDive(String rovName, int diveNumber){
         DiveDAO dao = new DiveDAOImpl();
         // returns null if no match is found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
-        if(dive == null) {
-            log.log(Level.WARNING, "getCTDCoverageRatioOfDive(): null dive - DiveErrorService");
-            return;
-        }
-
-        CtdDatumDAO daoCTD = new CtdDatumDAOImpl();
-        List<CtdDatum> ctdSamples = daoCTD.fetchCtdData(dive);
+        double coverageRatio = 0.0;
         
-        double coverage = ctdSamples.size()*sampleIntervalCTD(ctdSamples);
-        double diveLengthSecs = (dive.getEndDate().getTime() - dive.getStartDate().getTime())/1000; 
-        double coverageRatio = coverage/diveLengthSecs;
-
-        // System.out.println("percent of dive covered: " + coverageRatio + "%");
-        // System.out.println("coverage: " + coverage + " sample size: " + ctdSamples.size() + " sample interval: " + sampleInterval);
-        // System.out.println("dive end date: " + dive.getEndDate());
-        // System.out.println("dive start date: " + dive.getStartDate());
-        // System.out.println("dive length in seconds: " + diveLengthSecs);
-        // System.out.println("sample interval: " + sampleInterval);
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(Double.toString(coverageRatio));
+        if (dive != null) {
+            CtdDatumDAO daoCTD = new CtdDatumDAOImpl();
+            List<CtdDatum> ctdSamples = null;
+            try {
+                ctdSamples = daoCTD.fetchCtdData(dive);
+            } catch(Exception e){
+                log.log(Level.WARNING, "DiveErrorService.getCTDCoverageRatioOfDive() - Unable to retrieve ctd data");
+            }  
+            if(ctdSamples != null){
+                double coverage = ctdSamples.size()*sampleIntervalCTD(ctdSamples);
+                double diveLengthSecs = (dive.getEndDate().getTime() - dive.getStartDate().getTime())/1000; 
+                coverageRatio = coverage/diveLengthSecs;
+            }    
+        } else {
+            log.log(Level.WARNING, "DiveErrorService.getCTDCoverageRatioOfDive() - null dive");
+        }
+        return coverageRatio;
     }
 
     private double sampleIntervalCTD(List<CtdDatum> samples) {
@@ -345,48 +364,31 @@ public class DataErrorService implements Service {
     }
     
 
-//////////////////////////////////////////////////////////////////
-
-    private void getNavCoverageRatioOfDive(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
-
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-        
+    private double getNavCoverageRatioOfDive(String rovName, int diveNumber){
         DiveDAO dao = new DiveDAOImpl();
+        // findBy...() returns null if not found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+        double coverageRatio = 0.0;
 
-        if(dive==null){
-            log.log(Level.WARNING, "getNavCoverageRatioOfDive(): null dive - DiveErrorService");
-            return;
+        if(dive!=null){
+            NavigationDatumDAOImpl navDatumImpl = new NavigationDatumDAOImpl();
+            List<NavigationDatum> navSamples = null;
+            try {
+                navSamples = navDatumImpl.fetchBestNavigationData(dive);
+            } catch(Exception e) {
+                log.log(Level.WARNING, "DiveErrorService.getNavCoverageRatioOfDive(): Unable to retrieve navigation data");
+            }
+            if(navSamples != null){
+                double coverage = (int) (navSamples.size()*sampleIntervalNav(navSamples));
+                double diveLengthSecs = (dive.getEndDate().getTime() - dive.getStartDate().getTime())/1000; 
+                coverageRatio = coverage/diveLengthSecs;
+            }    
+        } else {
+            log.log(Level.WARNING, "DiveErrorService.getNavCoverageRatioOfDive(): null dive");
         }
-
-        NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
-        List<NavigationDatum> nav = dao1.fetchBestNavigationData(dive);
-        
-        double coverage = (int) (nav.size()*sampleIntervalNav(nav));
-        double diveLengthSecs = (dive.getEndDate().getTime() - dive.getStartDate().getTime())/1000; 
-        double coverageRatio = coverage/diveLengthSecs;
-
-        // System.out.println("nav record size * sample interval ( total coverage ): " + nav.size()*sampleIntervalNav(nav));
-        // System.out.println("percent of dive covered: " + coverageRatio + "%");
-        // System.out.println("dive length in seconds: " + diveLengthSecs);
-        // System.out.println("sample interval: " + sampleIntervalNav(nav));
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(Double.toString(coverageRatio));
+        return coverageRatio;
     }
 
-    /**
-   * 
-   * @param <T> The type of the list
-   * @param samples A list of objects
-   * @param fn A function that converts an object of type T to a unit of time as 
-   *           seconds (fractional seconds are OK)
-   * @return The estimated time that a sample represents (sample interval)
-   */
     private double sampleIntervalNav(List<NavigationDatum> samples) {
         if(samples == null || samples.size() == 0) return 0.0;
 
