@@ -7,15 +7,15 @@ To run backend:
 To retrieve dive stats:<br>
 
 %cam log coverage: 
-* hd footage: localhost:8080/dataerror/camcoveragehd/rovName/diveNumber
-* Sd footage: localhost:8080/dataerror/camcoveragesd/rovName/diveNumber<br>
+* hd footage: localhost:8080/dataerror/camcoveragehd/{rovName}/{diveNumber}
+* Sd footage: localhost:8080/dataerror/camcoveragesd/{rovName}/{diveNumber}<br>
 
 %nav log coverage: 
-* localhost:8080/dataerror/navcoverage/rovName/diveNumber<br>
+* localhost:8080/dataerror/navcoverage/{rovName}/{diveNumber}<br>
 
 %ctd log coverage: 
-* localhost:8080/dataerror/ctdcoverage/rovName/diveNumber
+* localhost:8080/dataerror/ctdcoverage/{rovName}/{diveNumber}
 Annotations missing timestamps:
-* localhost:8080/dataerror/annotations/rovName/diveNumber 
+* localhost:8080/dataerror/annotations/{rovName}/{diveNumber} 
 Annotations missing ancillary data:
-* localhost:8080/dataerror/ancillary/rovName/diveNumber
+* localhost:8080/dataerror/ancillary/{rovName}/{diveNumber}
