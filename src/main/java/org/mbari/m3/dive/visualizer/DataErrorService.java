@@ -12,6 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -172,13 +173,13 @@ public class DataErrorService implements Service {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        double coverageRatio = getCameraLogCoverageRatioOfDive(rovName, diveNumber, isHd);
+        String coverageRatio = getCameraLogCoverageRatioOfDive(rovName, diveNumber, isHd);
 
         response.headers().add("Access-Control-Allow-Origin", "*");
         response.headers().add("Access-Control-Allow-Headers", "*");
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(Double.toString(coverageRatio));
+        response.send(coverageRatio);
     }
 
     /**
@@ -190,13 +191,13 @@ public class DataErrorService implements Service {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        double coverageRatio = getCTDCoverageRatioOfDive(rovName, diveNumber);
+        String coverageRatio = getCTDCoverageRatioOfDive(rovName, diveNumber);
 
         response.headers().add("Access-Control-Allow-Origin", "*");
         response.headers().add("Access-Control-Allow-Headers", "*");
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(Double.toString(coverageRatio));
+        response.send(coverageRatio);
     }
 
     /**
@@ -208,13 +209,13 @@ public class DataErrorService implements Service {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        double coverageRatio = getNavCoverageRatioOfDive(rovName, diveNumber);
+        String coverageRatio = getNavCoverageRatioOfDive(rovName, diveNumber);
 
         response.headers().add("Access-Control-Allow-Origin", "*");
         response.headers().add("Access-Control-Allow-Headers", "*");
         response.headers().add("Access-Control-Allow-Credentials", "true");
         response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(Double.toString(coverageRatio));
+        response.send(coverageRatio);
     }
 
     /**
@@ -262,7 +263,7 @@ public class DataErrorService implements Service {
         return annotationsWithMissingData;
     }
 
-    private double getCameraLogCoverageRatioOfDive(String rovName, int diveNumber, boolean isHd){
+    private String getCameraLogCoverageRatioOfDive(String rovName, int diveNumber, boolean isHd){
         DiveDAO dao = new DiveDAOImpl();
         // returns null if no match is found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
@@ -284,7 +285,15 @@ public class DataErrorService implements Service {
         } else {
             log.log(Level.WARNING, "DiveErrorService.getCameraLogCoverageRatioOfDive(): null dive");
         }
-        return coverageRatio;
+        coverageRatio = coverageRatio * 100.0;
+        DecimalFormat df = new DecimalFormat("#.00");
+        String text = Double.toString(Math.abs(coverageRatio));
+        int integerPlaces = text.indexOf('.');
+        int decimalPlaces = text.length() - integerPlaces - 1;
+        if(decimalPlaces>=2){
+            return df.format(coverageRatio);
+        }
+        return Double.toString(coverageRatio);
     }
 
     private double sampleIntervalCam(List<CameraDatum> samples) {
@@ -324,7 +333,7 @@ public class DataErrorService implements Service {
         return seconds;
     }
 
-    private double getCTDCoverageRatioOfDive(String rovName, int diveNumber){
+    private String getCTDCoverageRatioOfDive(String rovName, int diveNumber){
         DiveDAO dao = new DiveDAOImpl();
         // returns null if no match is found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
@@ -346,7 +355,16 @@ public class DataErrorService implements Service {
         } else {
             log.log(Level.WARNING, "DiveErrorService.getCTDCoverageRatioOfDive() - null dive");
         }
-        return coverageRatio;
+
+        coverageRatio = coverageRatio * 100.0;
+        DecimalFormat df = new DecimalFormat("#.00");
+        String text = Double.toString(Math.abs(coverageRatio));
+        int integerPlaces = text.indexOf('.');
+        int decimalPlaces = text.length() - integerPlaces - 1;
+        if(decimalPlaces>=2){
+            return df.format(coverageRatio);
+        }
+        return Double.toString(coverageRatio);
     }
 
     private double sampleIntervalCTD(List<CtdDatum> samples) {
@@ -387,7 +405,7 @@ public class DataErrorService implements Service {
     }
     
 
-    private double getNavCoverageRatioOfDive(String rovName, int diveNumber){
+    private String getNavCoverageRatioOfDive(String rovName, int diveNumber){
         DiveDAO dao = new DiveDAOImpl();
         // findBy...() returns null if not found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
@@ -409,7 +427,16 @@ public class DataErrorService implements Service {
         } else {
             log.log(Level.WARNING, "DiveErrorService.getNavCoverageRatioOfDive(): null dive");
         }
-        return coverageRatio;
+
+        coverageRatio = coverageRatio * 100.0;
+        DecimalFormat df = new DecimalFormat("#.00");
+        String text = Double.toString(Math.abs(coverageRatio));
+        int integerPlaces = text.indexOf('.');
+        int decimalPlaces = text.length() - integerPlaces - 1;
+        if(decimalPlaces>=2){
+            return df.format(coverageRatio);
+        }
+        return Double.toString(coverageRatio);
     }
 
     private double sampleIntervalNav(List<NavigationDatum> samples) {
