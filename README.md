@@ -4,12 +4,15 @@ To run backend:
 2. java -jar target/dive-video-visualizer.jar
 
 
-To retrieve dive stats:
+To retrieve dive stats:<br>
+
 %cam log coverage: 
 * hd footage: localhost:8080/dataerror/camcoveragehd/rovName/diveNumber
-* Sd footage: localhost:8080/dataerror/camcoveragesd/rovName/diveNumber
+* Sd footage: localhost:8080/dataerror/camcoveragesd/rovName/diveNumber<br>
+
 %nav log coverage: 
-* localhost:8080/dataerror/navcoverage/rovName/diveNumber
+* localhost:8080/dataerror/navcoverage/rovName/diveNumber<br>
+
 %ctd log coverage: 
 * localhost:8080/dataerror/ctdcoverage/rovName/diveNumber
 Annotations missing timestamps:
