@@ -1,18 +1,15 @@
 package org.mbari.m3.dive.visualizer;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
 import io.helidon.webserver.Service;
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.URI;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,17 +22,24 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.Set;
-
 
 public class DiveAnnotationService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
+    AnnotationData annotationData = new AnnotationData();
+    Utilities utilities = new Utilities();
+    Cache<String, AnnotationData> cache = Caffeine
+        .newBuilder()
+        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .maximumSize(100)
+        .build();
 
     @Override
     public void update(Routing.Rules rules) {
         rules.get("/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getRovDiveAnnotations(req, res);
+                utilities.headersRespondSend(getRovDiveAnnotations(req), res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -51,44 +55,31 @@ public class DiveAnnotationService implements Service {
      * @throws InterruptedException
      * @throws IOException
      */
-    private void getRovDiveAnnotations(ServerRequest request, ServerResponse response)
-            throws IOException, InterruptedException {
+    private String getRovDiveAnnotations(ServerRequest request){
 
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        JsonObject allAnnotationData = getDiveDataThroughHttpRequest(rovName, diveNumber);
+        annotationData = cache.get("annotations", k -> {
+            try {
+                System.out.println("getting annotations!");
+                return AnnotationData.get(annotationData.set(rovName, diveNumber));
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                log.log(Level.WARNING, "Unable to set and get annotation data - DiveAnnotationService.getAnnotationData()");
+                
+                e.printStackTrace();
+            }
+            return new AnnotationData();
+        });
+
+
+        JsonObject allAnnotationData = annotationData.getData();
+
         JsonObject linksAndAnnotations = getVidsAndAnnotations(allAnnotationData);
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(linksAndAnnotations.toString());
+        return linksAndAnnotations.toString();
     }
 
-
-    /**
-     * Sends http request to retrieve the json for the given rov and dive number
-     * 
-     * @param rovName
-     * @param diveNumber
-     */
-    private JsonObject getDiveDataThroughHttpRequest(String rovName, int diveNumber) throws IOException, InterruptedException {
-
-        final HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
-        if(rovName.contains(" ")){// These are for rov names with a space (i.e Mini Rov & Doc Rickett)
-            rovName = rovName.replace(" ","%20");
-        }
-        String path = "http://dsg.mbari.org/references/query/dive/" + rovName + "%20" + diveNumber;
-
-        HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(path))
-                .setHeader("User-Agent", "Java 11 HttpClient Bot").build();
-
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        return (new JsonParser().parse(response.body()).getAsJsonObject());
-    }
 
     /**
      * Returns a JsonArray of all Annotations from specific dive

@@ -1,35 +1,40 @@
 package org.mbari.m3.dive.visualizer;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
 import io.helidon.webserver.Service;
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
-
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PhotoAnnotationService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
+    AnnotationData annotationData = new AnnotationData();
+    Utilities utilities = new Utilities();
+
+    Cache<String, AnnotationData> cache = Caffeine
+        .newBuilder()
+        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .maximumSize(100)
+        .build();
 
     @Override
     public void update(Routing.Rules rules) {
         rules.get("/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getRovPhotoAnnotations(req, res);
+                utilities.headersRespondSend(getRovPhotoAnnotations(req), res); 
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -42,46 +47,25 @@ public class PhotoAnnotationService implements Service {
      * Returns a list of dives for the given ROV.
      * 
      * @param request
-     * @param response
-     * @throws InterruptedException
-     * @throws IOException
      */
-    private void getRovPhotoAnnotations(ServerRequest request, ServerResponse response)
-            throws IOException, InterruptedException {
+    private String getRovPhotoAnnotations(ServerRequest request){
 
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        JsonObject allAnnotationData = getAnnotationData(rovName, diveNumber);
-        JsonObject photoLinksAndAnnotations = getPhotoUrlsAndAnnotations(allAnnotationData);
+        annotationData = cache.get("annotations", k -> {
+            try {
+                return AnnotationData.get(annotationData.set(rovName, diveNumber));
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return null;
+        });
 
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(photoLinksAndAnnotations.toString());
-    }
+        JsonObject photoLinksAndAnnotations = getPhotoUrlsAndAnnotations(annotationData.getData());
 
-    /**
-     * Sends http request to retrieve the json for the given rov and dive number
-     * 
-     * @param rovName
-     * @param diveNumber
-     */
-    private JsonObject getAnnotationData(String rovName, int diveNumber) throws IOException, InterruptedException {
-
-        final HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
-        if(rovName.contains(" ")){// These are for rov names with a space (i.e Mini Rov & Doc Rickett)
-            rovName = rovName.replace(" ","%20");
-        }
-        String path = "http://dsg.mbari.org/references/query/dive/" + rovName + "%20" + diveNumber;
-
-        HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(path))
-                .setHeader("User-Agent", "Java 11 HttpClient Bot").build();
-
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        return (new JsonParser().parse(response.body()).getAsJsonObject());
+        return photoLinksAndAnnotations.toString();
     }
 
     private JsonArray getAnnotations(JsonObject allAnnotationData) {

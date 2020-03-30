@@ -27,47 +27,60 @@ import org.mbari.expd.NavigationDatum;
 
 public class DiveService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
+    Utilities utilities = new Utilities();
 
     @Override
     public void update(Routing.Rules rules) {
 
-        rules.get("/getRovNames", this::getRovNames);
+        rules.get("/getRovNames", (req, res) -> {
+            try {
+                utilities.headersRespondSend(getRovNames(),res);
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        });
 
         rules.get("/getlatsandlongs/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getLatsAndLongs(req, res);
+                utilities.headersRespondSend(getLatsAndLongs(req), res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         });
+
         rules.get("/checkdivenumber/{rov}/{diveNumber}", (req, res) -> {
             try {
-                checkDiveNumber(req, res);
+                utilities.headersRespondSend(checkDiveNumber(req), res);
+                
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         });
+
         rules.get("/getminanddepth/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getMinAndDepth(req, res);
+                utilities.headersRespondSend(getMinAndDepth(req), res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         });
+
         rules.get("/gethouranddepth/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getHourAndDepth(req, res);
+                utilities.headersRespondSend(getHourAndDepth(req), res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         });
+
         rules.get("/getdivedates/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getDiveDates(req, res);
+                utilities.headersRespondSend(getDiveDates(req), res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -75,7 +88,7 @@ public class DiveService implements Service {
         });
         rules.get("/getctd/{rov}/{diveNumber}", (req, res) -> {
             try {
-                getCTD(req, res);
+                utilities.headersRespondSend(getCTD(req), res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -84,7 +97,7 @@ public class DiveService implements Service {
     }
 
 
-    private void getLatsAndLongs(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+    private String getLatsAndLongs(ServerRequest request) {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
@@ -93,7 +106,7 @@ public class DiveService implements Service {
 
         if(dive==null){
             System.out.println("getLatsAndLongs(): null dive");
-            return;
+            return "No Dive Available";
         }
 
         NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
@@ -108,14 +121,10 @@ public class DiveService implements Service {
             latsAndLongs.add(newLatLongObj);
         }
 
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(latsAndLongs.toString());
+        return latsAndLongs.toString();
     }
 
-    private void checkDiveNumber(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+    private String checkDiveNumber(ServerRequest request) {
 
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
@@ -138,14 +147,10 @@ public class DiveService implements Service {
         JsonObject existObj = new JsonObject();
         existObj.addProperty("exists", diveExists);
 
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(existObj.toString());
+        return existObj.toString();
     }
 
-    private void getMinAndDepth(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+    private String getMinAndDepth(ServerRequest request) {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
@@ -154,7 +159,7 @@ public class DiveService implements Service {
 
         if(dive==null){
             log.log(Level.WARNING, "getLatsAndLongs(): null dive - DiveService");
-            return;
+            return "No dive available";
         }
 
         NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
@@ -172,14 +177,10 @@ public class DiveService implements Service {
             minAndDepth.add(newMinDepthObj);
         }
 
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(minAndDepth.toString());
+        return minAndDepth.toString();
     }
 
-    private void getHourAndDepth(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+    private String getHourAndDepth(ServerRequest request) {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
@@ -188,7 +189,7 @@ public class DiveService implements Service {
 
         if(dive==null){
             log.log(Level.WARNING, "getHourAndDepth(): null dive - DiveService");
-            return;
+            return "No dive available";
         }
 
         NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
@@ -206,11 +207,7 @@ public class DiveService implements Service {
             hourAndDepth.add(newHourDepthObj);
         }
 
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(hourAndDepth.toString());
+        return hourAndDepth.toString();
     }
     
     /**
@@ -218,20 +215,17 @@ public class DiveService implements Service {
      * @param request
      * @param response
      */
-    private void getRovNames(ServerRequest request, ServerResponse response) {
+    private String getRovNames() {
         JsonArray arr = new JsonArray();
         for (String name: BaseDAOImpl.getAllRovNames()) {
             arr.add(name);
         }
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(arr.toString());
+
+        return arr.toString();
     }
 
 
-    private void getDiveDates(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+    private String getDiveDates(ServerRequest request) {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
         DiveDAO dao = new DiveDAOImpl();
@@ -239,7 +233,7 @@ public class DiveService implements Service {
 
         if(dive==null){
             log.log(Level.WARNING, "getDiveDates(): null dive - DiveService");
-            return;
+            return "No dive available";
         }
 
         NavigationDatumDAOImpl dao1 = new NavigationDatumDAOImpl();
@@ -284,14 +278,10 @@ public class DiveService implements Service {
 
         }
 
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(dates.toString());
+        return dates.toString();
     }
     
-    private void getCTD(ServerRequest request, ServerResponse response)throws IOException, InterruptedException {
+    private String getCTD(ServerRequest request) {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
@@ -303,7 +293,7 @@ public class DiveService implements Service {
 
         if(dive == null || ctd == null){
             System.out.println("getCTD(): null dive");
-            return;
+            return "No dive available";
         }
 
         JsonArray ctdArray = new JsonArray();
@@ -316,10 +306,6 @@ public class DiveService implements Service {
             ctdArray.add(ctdObject);
         }
 
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(ctdArray.toString());
+        return ctdArray.toString();
     }
 }

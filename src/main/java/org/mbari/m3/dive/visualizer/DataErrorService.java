@@ -1,5 +1,8 @@
 package org.mbari.m3.dive.visualizer;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -19,6 +22,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.mbari.expd.CameraDatum;
@@ -38,13 +42,24 @@ import mbarix4j.math.Statlib;
 
 public class DataErrorService implements Service {
     private final Logger log = Logger.getLogger(getClass().getName());
+    AnnotationData annotationData = new AnnotationData();
+
+    Cache<String, AnnotationData> cache = Caffeine
+        .newBuilder()
+        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .maximumSize(100)
+        .build();
+    
+    Utilities utilities = new Utilities();
+
 
     @Override
     public void update(Routing.Rules rules) {
 
         rules.get("/timestamps/{rov}/{diveNumber}", (req, res) -> {
             try {
-                missingTimestampsHttpResponse(req, res);
+                utilities.headersRespondSend(getAnnotationsWithMissingTimestamps(req), res);
+                //missingTimestampsHttpResponse(req);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -53,7 +68,8 @@ public class DataErrorService implements Service {
 
         rules.get("/ancillary/{rov}/{diveNumber}", (req, res) -> {
             try {
-                missingAncillaryHttpResponse(req, res);
+                utilities.headersRespondSend(getAnnotationsWithMissingAncillaryData(req), res);
+                //missingAncillaryHttpResponse(req, res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -62,7 +78,7 @@ public class DataErrorService implements Service {
 
         rules.get("/navcoverage/{rov}/{diveNumber}", (req, res) -> {
             try {
-                navLogCoverageHttpResponse(req, res);
+                utilities.headersRespondSend(getNavCoverageRatioOfDive(req), res);
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -71,7 +87,7 @@ public class DataErrorService implements Service {
 
         rules.get("/ctdcoverage/{rov}/{diveNumber}", (req, res) -> {
             try {
-                ctdLogCoverageHttpResponse(req, res);
+                utilities.headersRespondSend(getCTDCoverageRatioOfDive(req), res); 
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -80,7 +96,7 @@ public class DataErrorService implements Service {
 
         rules.get("/camcoveragehd/{rov}/{diveNumber}", (req, res) -> {
             try {
-                cameraLogCoverageHttpResponse(req, res, true);
+                utilities.headersRespondSend(getCameraLogCoverageRatioOfDive(req,true), res); 
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -88,7 +104,7 @@ public class DataErrorService implements Service {
         });
         rules.get("/camcoveragesd/{rov}/{diveNumber}", (req, res) -> {
             try {
-                cameraLogCoverageHttpResponse(req, res, false);
+                utilities.headersRespondSend(getCameraLogCoverageRatioOfDive(req,false), res); 
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -96,126 +112,30 @@ public class DataErrorService implements Service {
         });
     }
 
-    /**
-     * Sends http request to retrieve the json for the given rov and dive number
-     * returns MBARI information on dive. This contains a json tree with annotations and media
-     * @param rovName
-     * @param diveNumber
-     */
-    private JsonObject getDiveDataThroughHttpRequest(String rovName, int diveNumber) throws IOException, InterruptedException {
-        final HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
-        if(rovName.contains(" ")){// These are for rov names with a space (i.e Mini Rov & Doc Rickett)
-            rovName = rovName.replace(" ","%20");
-        }
-        String path = "http://dsg.mbari.org/references/query/dive/" + rovName + "%20" + diveNumber;
-
-        HttpRequest request = HttpRequest
-            .newBuilder()
-            .GET()
-            .uri(URI.create(path))
-            .setHeader("User-Agent", "Java 11 HttpClient Bot")
-            .build();
-
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        return (new JsonParser().parse(response.body()).getAsJsonObject());
-    }
 
     /**
-     * Sends http response with Json Array of annotations with missing timestamps
-     * @param request
-     * @param response
+     * Returns a JsonObject of all Annotations from specific dive
+     * @param allAnnotationData
+     * Notes: it calls the cache. It passes a key ("annotations"), and a function k.
+     *         The function provides data to the cache if key does not exist.
      */
-    private void missingTimestampsHttpResponse(ServerRequest request, ServerResponse response)
-            throws IOException, InterruptedException {
+    private JsonObject getAnnotationData(ServerRequest request){
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        JsonObject allAnnotationData = getDiveDataThroughHttpRequest(rovName, diveNumber);
+        annotationData = cache.get("annotations", k -> {
+            try {
+                return AnnotationData.get(annotationData.set(rovName, diveNumber));
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                log.log(Level.WARNING, "Unable to set and get annotation data - DataErrorService.getAnnotationData()");
+            }
+            
+            return new AnnotationData();
+        });
 
-        JsonArray missingTimestamps = getAnnotationsWithMissingTimestamps(allAnnotationData);
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(missingTimestamps.toString());
-    }
-
-    /**
-     * Sends http response with Json Array of annotations with missing ancillary data
-     * @param request
-     * @param response
-     */
-    private void missingAncillaryHttpResponse(ServerRequest request, ServerResponse response)
-            throws IOException, InterruptedException {
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-
-        JsonObject allAnnotationData = getDiveDataThroughHttpRequest(rovName, diveNumber);
-
-        JsonArray missingAncillary = getAnnotationsWithMissingAncillaryData(allAnnotationData);
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(missingAncillary.toString());
-    }
-
-    /**
-     * Sends http response of a double (amount of footage time / time of dive) of the ratio of camera log footage covered in dive.
-     * @param request
-     * @param response
-     * @param isHd  quality of footage
-     */
-    private void cameraLogCoverageHttpResponse(ServerRequest request, ServerResponse response, boolean isHd) throws IOException, InterruptedException {
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-
-        String coverageRatio = getCameraLogCoverageRatioOfDive(rovName, diveNumber, isHd);
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(coverageRatio);
-    }
-
-    /**
-     * Sends http response of a double (amount of ctd time / time of dive) of the ratio of ctd logs covered in dive.
-     * @param request
-     * @param response
-     */
-    private void ctdLogCoverageHttpResponse(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-
-        String coverageRatio = getCTDCoverageRatioOfDive(rovName, diveNumber);
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(coverageRatio);
-    }
-
-    /**
-     * Sends http response of a double (amount of nav time / time of dive) of the ratio of nav logs covered in dive.
-     * @param request
-     * @param response
-     */
-    private void navLogCoverageHttpResponse(ServerRequest request, ServerResponse response) throws IOException, InterruptedException {
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-
-        String coverageRatio = getNavCoverageRatioOfDive(rovName, diveNumber);
-
-        response.headers().add("Access-Control-Allow-Origin", "*");
-        response.headers().add("Access-Control-Allow-Headers", "*");
-        response.headers().add("Access-Control-Allow-Credentials", "true");
-        response.headers().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        response.send(coverageRatio);
+        return annotationData.getData();
     }
 
     /**
@@ -224,18 +144,20 @@ public class DataErrorService implements Service {
      */
     private JsonArray getAnnotations(JsonObject allAnnotationData) {
         if (allAnnotationData == null) {
-            log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotations()");
+            log.log(Level.WARNING, "Annotation Data empty - DataErrorService.getAnnotations()");
             return null;
         }
         return allAnnotationData.getAsJsonArray("annotations");
     }
 
+    private String getAnnotationsWithMissingTimestamps(ServerRequest request) {
+        JsonObject allAnnotationData = getAnnotationData(request);
 
-    public JsonArray getAnnotationsWithMissingTimestamps(JsonObject allAnnotationData) {
         if (allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DataErrorService.getMissingTimestamps()");
             return null;
         }
+
         JsonArray allAnnotations = getAnnotations(allAnnotationData);
         JsonArray annosWithMissingTimestamps = new JsonArray();
 
@@ -244,10 +166,13 @@ public class DataErrorService implements Service {
                 annosWithMissingTimestamps.add(allAnnotations.get(i).getAsJsonObject());
             }
         }
-        return annosWithMissingTimestamps;
+        return annosWithMissingTimestamps.toString();
     }
 
-    private JsonArray getAnnotationsWithMissingAncillaryData(JsonObject allAnnotationData) {
+
+    private String getAnnotationsWithMissingAncillaryData(ServerRequest request) {
+        JsonObject allAnnotationData = getAnnotationData(request);
+
         if (allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DataErrorService.getMissingTimestamps()");
             return null;
@@ -260,10 +185,13 @@ public class DataErrorService implements Service {
                 annotationsWithMissingData.add(allAnnotations.get(i).getAsJsonObject());
             }
         }
-        return annotationsWithMissingData;
+        return annotationsWithMissingData.toString();
     }
 
-    private String getCameraLogCoverageRatioOfDive(String rovName, int diveNumber, boolean isHd){
+    private String getCameraLogCoverageRatioOfDive(ServerRequest request, boolean isHd){
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
         DiveDAO dao = new DiveDAOImpl();
         // returns null if no match is found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
@@ -333,7 +261,10 @@ public class DataErrorService implements Service {
         return seconds;
     }
 
-    private String getCTDCoverageRatioOfDive(String rovName, int diveNumber){
+    private String getCTDCoverageRatioOfDive(ServerRequest request){
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
         DiveDAO dao = new DiveDAOImpl();
         // returns null if no match is found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
@@ -405,7 +336,11 @@ public class DataErrorService implements Service {
     }
     
 
-    private String getNavCoverageRatioOfDive(String rovName, int diveNumber){
+    private String getNavCoverageRatioOfDive(ServerRequest request){
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+
         DiveDAO dao = new DiveDAOImpl();
         // findBy...() returns null if not found
         Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);

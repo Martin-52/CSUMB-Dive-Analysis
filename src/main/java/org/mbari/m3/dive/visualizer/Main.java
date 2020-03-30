@@ -54,6 +54,7 @@ public final class Main {
                 ServerConfiguration.create(config.get("server"));
 
         WebServer server = WebServer.create(serverConfig, createRouting(config));
+
         // Try to start the server. If successful, print some info and arrange to
         // print a message at shutdown. If unsuccessful, print the exception.
         server.start()
