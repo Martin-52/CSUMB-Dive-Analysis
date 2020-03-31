@@ -110,7 +110,26 @@ public class DataErrorService implements Service {
                 e.printStackTrace();
             } 
         });
+
+        // rules.get("/testingcache/{rov}/{diveNumber}", (req, res) -> {
+        //     try {
+        //         utilities.headersRespondSend(testingCache(req), res);
+        //     } catch (IOException | InterruptedException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // });
+        
     }
+
+
+    // public String testingCache(ServerRequest request){
+    //     String rovName = request.path().param("rov");
+    //     int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+    //     SingletonCache cacheWrapper = SingletonCache.getInstance();
+    //     return cacheWrapper.getData(rovName, diveNumber);
+    // }
 
 
     /**
@@ -123,15 +142,16 @@ public class DataErrorService implements Service {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        annotationData = cache.get("annotations", k -> {
+        SingletonCache cacheWrapper = SingletonCache.getInstance();
+
+        annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
             try {
-                return AnnotationData.get(annotationData.set(rovName, diveNumber));
+                return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
                 log.log(Level.WARNING, "Unable to set and get annotation data - DataErrorService.getAnnotationData()");
             }
-            
             return new AnnotationData();
         });
 

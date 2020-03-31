@@ -36,7 +36,7 @@ public class AnnotationData {
     Config config = Config.create();
 
     AnnotationData(){
-        this.annotationData = null;
+        this.annotationData = new JsonObject();
     }
 
     AnnotationData(JsonObject annotationData){
@@ -44,16 +44,12 @@ public class AnnotationData {
     }
 
     AnnotationData(String rovName, int diveNumber) throws IOException, InterruptedException {
-        this.annotationData = initializeData(rovName, diveNumber);
+        this.annotationData = initializeAnnotationData(rovName, diveNumber);
     }
 
     public static AnnotationData get(JsonObject data) {
         objectCounter++;
         return new AnnotationData(data);
-    }
-
-    public JsonObject set(String rovName,int diveNumber) throws IOException, InterruptedException {
-        return initializeData(rovName, diveNumber);
     }
 
     public JsonObject getData(){
@@ -64,7 +60,7 @@ public class AnnotationData {
         return AnnotationData.objectCounter;
     }
 
-    private JsonObject initializeData(String rovName,int diveNumber) throws IOException, InterruptedException {
+    public JsonObject initializeAnnotationData(String rovName,int diveNumber) throws IOException, InterruptedException {
         final HttpClient httpClient = HttpClient
             .newBuilder()
             .version(HttpClient.Version.HTTP_2)
@@ -74,12 +70,9 @@ public class AnnotationData {
             rovName = rovName.replace(" ","%20");
         }
 
+        String mbariPath = config.get("mbariPath").asString().get();        
 
-        //System.out.println("AnnotationdData. PATH: " + config.get("mbariPath")); // FIX
-        Config pathl = config.get("mbariPath");
-        //System.out.println("PATH: " + pathl.);
-
-        String path = "http://dsg.mbari.org/references/query/dive/" + rovName + "%20" + diveNumber;
+        String path = mbariPath + rovName + "%20" + diveNumber;
 
         HttpRequest request = HttpRequest
             .newBuilder()

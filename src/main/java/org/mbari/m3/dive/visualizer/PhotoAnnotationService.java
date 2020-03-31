@@ -53,9 +53,11 @@ public class PhotoAnnotationService implements Service {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        annotationData = cache.get("annotations", k -> {
+        SingletonCache cacheWrapper = SingletonCache.getInstance();
+
+        annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
             try {
-                return AnnotationData.get(annotationData.set(rovName, diveNumber));
+                return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();

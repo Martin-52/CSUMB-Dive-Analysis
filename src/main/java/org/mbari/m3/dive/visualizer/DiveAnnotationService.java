@@ -5,6 +5,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
@@ -45,7 +47,44 @@ public class DiveAnnotationService implements Service {
                 e.printStackTrace();
             }
         });
+
+        // rules.get("/testingcache/{rov}/{diveNumber}", (req, res) -> {
+        //     try {
+        //         utilities.headersRespondSend(testingCache(req), res);
+        //     } catch (IOException | InterruptedException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // });
+
+        // rules.get("/testingcachedelete/{rov}/{diveNumber}", (req, res) -> {
+            
+        //     try {
+        //         utilities.headersRespondSend(testingCacheDelete(req), res);
+        //     } catch (IOException | InterruptedException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // });
     }
+
+    // public String testingCache(ServerRequest request){
+    //     String rovName = request.path().param("rov");
+    //     int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+    //     SingletonCache cacheWrapper = SingletonCache.getInstance();
+    //     return cacheWrapper.getData(rovName, diveNumber);
+    // }
+
+    // public String testingCacheDelete(ServerRequest request){
+    //     String rovName = request.path().param("rov");
+    //     int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+    //     SingletonCache cacheWrapper = SingletonCache.getInstance();
+    //     cacheWrapper.cache.put(rovName+diveNumber, new AnnotationData());
+    //     System.out.println("deleted cache");
+    //     return "deleted cache";
+    // }
 
     /**
      * Returns a list of dives for the given ROV.
@@ -60,10 +99,11 @@ public class DiveAnnotationService implements Service {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        annotationData = cache.get("annotations", k -> {
+        SingletonCache cacheWrapper = SingletonCache.getInstance();
+
+        annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
             try {
-                System.out.println("getting annotations!");
-                return AnnotationData.get(annotationData.set(rovName, diveNumber));
+                return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 log.log(Level.WARNING, "Unable to set and get annotation data - DiveAnnotationService.getAnnotationData()");
@@ -72,7 +112,6 @@ public class DiveAnnotationService implements Service {
             }
             return new AnnotationData();
         });
-
 
         JsonObject allAnnotationData = annotationData.getData();
 
