@@ -155,7 +155,7 @@ public class PhotoVideoData {
                                 JsonObject tempObj = new JsonObject();
 
                                 tempObj.addProperty("video_reference_uuid",video_reference_uuid);
-                                tempObj.addProperty("timestamp", allMedia.get(i).getAsJsonObject().get("start_timestamp").getAsString());
+                                tempObj.addProperty("recorded_timestamp", allMedia.get(i).getAsJsonObject().get("start_timestamp").getAsString());
                                 tempObj.addProperty("duration_millis", allMedia.get(i).getAsJsonObject().get("duration_millis").getAsString());
 
                                 linksAndUUID.add(uri, tempObj);
@@ -169,7 +169,7 @@ public class PhotoVideoData {
         // Gets and Orders annotations
         for (Entry<String, JsonElement> entry : linksAndUUID.entrySet()) {
             String vid_ref_id = entry.getValue().getAsJsonObject().get("video_reference_uuid").getAsString();
-            String timestamp = entry.getValue().getAsJsonObject().get("timestamp").getAsString();
+            String timestamp = entry.getValue().getAsJsonObject().get("recorded_timestamp").getAsString();
             int duration = entry.getValue().getAsJsonObject().get("duration_millis").getAsInt();
             
             JsonArray videoAnnotations = getAnnotationsByVidRefUUIDAndTimestampDuration(
@@ -177,6 +177,8 @@ public class PhotoVideoData {
                 timestamp, 
                 duration, 
                 allAnnotationData);
+            
+
             if(videoAnnotations.size()>0){
                 JsonArray newSortedArray = sortAnnotationArray(videoAnnotations);
                 entry.getValue().getAsJsonObject().add("annotations", newSortedArray);
@@ -184,7 +186,7 @@ public class PhotoVideoData {
             entry.getValue().getAsJsonObject().remove("video_reference_uuid");
             entry.getValue().getAsJsonObject().remove("duration_millis");
         }
-
+    
         // Add mapping to linksAndUUID
         // Made an object in case we want to add another variable
         linksAndUUID.add("videoOrdering",getOrderedListOfPhotoOrVideoLinks(linksAndUUID));
@@ -196,9 +198,7 @@ public class PhotoVideoData {
     * This function takes the video_reference_uuid. It will return a list (Gson list) of annotations
     * @param video_reference_uuid
     */
-    private JsonArray getAnnotationsByVidRefUUIDAndTimestampDuration(
-        String video_reference_uuid, String timestamp, int duration, JsonObject allAnnotationData){
-
+    private JsonArray getAnnotationsByVidRefUUIDAndTimestampDuration(String video_reference_uuid, String timestamp, int duration, JsonObject allAnnotationData){
         if(allAnnotationData == null) {
             log.log(Level.WARNING, "Annotation Data empty - DiveAnnotationService.getAnnotationsByVidRefUUIDAndTimestampDuration()");
             return null;
@@ -361,7 +361,7 @@ public class PhotoVideoData {
 
     JsonObject getPhotoUrlsAndAnnotations(JsonObject allAnnotationData){
         if(allAnnotationData==null){
-            System.out.println("No data");
+            return new JsonObject();
         }
         JsonArray annotations = getAnnotations(allAnnotationData);
         JsonObject jpgPhotoUrlsMap = new JsonObject();
@@ -383,7 +383,7 @@ public class PhotoVideoData {
                             }
                             timestamp = annotations.get(i).getAsJsonObject().get("recorded_timestamp").getAsString();
                             jpgPhotoUrlsMap.add(photoUrl, new JsonObject());
-                            jpgPhotoUrlsMap.get(photoUrl).getAsJsonObject().addProperty("timestamp", timestamp);
+                            jpgPhotoUrlsMap.get(photoUrl).getAsJsonObject().addProperty("recorded_timestamp", timestamp);
                             jpgPhotoUrlsMap.get(photoUrl).getAsJsonObject().add("annotations", new JsonArray());
                         }
                         JsonObject newAnnotation = annotations.get(i).getAsJsonObject();
@@ -443,7 +443,11 @@ public class PhotoVideoData {
             }
         });
 
-        return listToJsonArray(mapping);
+        JsonArray temp = new JsonArray();
+        for(int i = 0; i < mapping.size();i++) {
+            temp.add(mapping.get(i).getAsJsonObject());
+        }
+        return temp;
     }
 
 
@@ -456,7 +460,7 @@ public class PhotoVideoData {
         
         // add timestamps and links to mapping list
         for (Entry<String, JsonElement> entry : urlsMap.entrySet()) {
-            String timestamp = entry.getValue().getAsJsonObject().get("timestamp").getAsString();
+            String timestamp = entry.getValue().getAsJsonObject().get("recorded_timestamp").getAsString();
             int i = 0;
             for(; i < timestamp.length();i++){
                 if(timestamp.charAt(i)=='T') break;
@@ -486,16 +490,11 @@ public class PhotoVideoData {
             }
         });
         
-        return listToJsonArray(mapping);
-    }
-
-    private JsonArray listToJsonArray(List<JsonObject> list){
-       // making finalMapping to turn mapping into a jsonArray
-       JsonArray jsonArray = new JsonArray();
-       for(int i = 0; i < list.size();i++) {
-           jsonArray.add(list.get(i).get("link"));
-       }
-       return jsonArray;
+        JsonArray jsonArray = new JsonArray();
+        for(int i = 0; i < mapping.size();i++) {
+            jsonArray.add(mapping.get(i).get("link"));
+        }
+        return jsonArray;
     }
 
 }
