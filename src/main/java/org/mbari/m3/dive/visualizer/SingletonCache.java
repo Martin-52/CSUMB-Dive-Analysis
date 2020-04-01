@@ -25,4 +25,14 @@ public class SingletonCache {
         return single_instance;
     }
 
+    public String getData(String key){
+        if(single_instance == null) return "no cache";
+        String data = cache.getIfPresent(key);
+        if(data == null) return "no AnnotationData";
+        return data;
+    }
+
+    public void setData(String key, String value) {
+        cache.put(key, value);
+    }
 }

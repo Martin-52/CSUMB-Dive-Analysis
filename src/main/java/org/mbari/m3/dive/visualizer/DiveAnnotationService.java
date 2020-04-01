@@ -21,6 +21,5 @@ public class DiveAnnotationService implements Service {
                 e.printStackTrace();
             }
         });
-
     }
 }
