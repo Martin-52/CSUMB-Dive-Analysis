@@ -56,25 +56,25 @@ public class DataErrorService implements Service {
     @Override
     public void update(Routing.Rules rules) {
 
-        rules.get("/timestamps/{rov}/{diveNumber}", (req, res) -> {
-            try {
-                utilities.headersRespondSend(getAnnotationsWithMissingTimestamps(req), res);
-                //missingTimestampsHttpResponse(req);
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        });
+        // rules.get("/timestamps/{rov}/{diveNumber}", (req, res) -> {
+        //     try {
+        //         utilities.headersRespondSend(getAnnotationsWithMissingTimestamps(req), res);
+        //         //missingTimestampsHttpResponse(req);
+        //     } catch (IOException | InterruptedException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // });
 
-        rules.get("/ancillary/{rov}/{diveNumber}", (req, res) -> {
-            try {
-                utilities.headersRespondSend(getAnnotationsWithMissingAncillaryData(req), res);
-                //missingAncillaryHttpResponse(req, res);
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        });
+        // rules.get("/ancillary/{rov}/{diveNumber}", (req, res) -> {
+        //     try {
+        //         utilities.headersRespondSend(getAnnotationsWithMissingAncillaryData(req), res);
+        //         //missingAncillaryHttpResponse(req, res);
+        //     } catch (IOException | InterruptedException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // });
 
         rules.get("/navcoverage/{rov}/{diveNumber}", (req, res) -> {
             try {
@@ -138,25 +138,25 @@ public class DataErrorService implements Service {
      * Notes: it calls the cache. It passes a key ("annotations"), and a function k.
      *         The function provides data to the cache if key does not exist.
      */
-    private JsonObject getAnnotationData(ServerRequest request){
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+    // private JsonObject getAnnotationData(ServerRequest request){
+    //     String rovName = request.path().param("rov");
+    //     int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        SingletonCache cacheWrapper = SingletonCache.getInstance();
+    //     SingletonCache cacheWrapper = SingletonCache.getInstance();
 
-        annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
-            try {
-                return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                log.log(Level.WARNING, "Unable to set and get annotation data - DataErrorService.getAnnotationData()");
-            }
-            return new AnnotationData();
-        });
+    //     annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
+    //         try {
+    //             return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
+    //         } catch (IOException | InterruptedException e) {
+    //             // TODO Auto-generated catch block
+    //             e.printStackTrace();
+    //             log.log(Level.WARNING, "Unable to set and get annotation data - DataErrorService.getAnnotationData()");
+    //         }
+    //         return new AnnotationData();
+    //     });
 
-        return annotationData.getData();
-    }
+    //     return annotationData.getData();
+    // }
 
     /**
      * Returns a JsonArray of all Annotations from specific dive
@@ -170,43 +170,43 @@ public class DataErrorService implements Service {
         return allAnnotationData.getAsJsonArray("annotations");
     }
 
-    private String getAnnotationsWithMissingTimestamps(ServerRequest request) {
-        JsonObject allAnnotationData = getAnnotationData(request);
+    // private String getAnnotationsWithMissingTimestamps(ServerRequest request) {
+    //     JsonObject allAnnotationData = getAnnotationData(request);
 
-        if (allAnnotationData == null) {
-            log.log(Level.WARNING, "Annotation Data empty - DataErrorService.getMissingTimestamps()");
-            return null;
-        }
+    //     if (allAnnotationData == null) {
+    //         log.log(Level.WARNING, "Annotation Data empty - DataErrorService.getMissingTimestamps()");
+    //         return null;
+    //     }
 
-        JsonArray allAnnotations = getAnnotations(allAnnotationData);
-        JsonArray annosWithMissingTimestamps = new JsonArray();
+    //     JsonArray allAnnotations = getAnnotations(allAnnotationData);
+    //     JsonArray annosWithMissingTimestamps = new JsonArray();
 
-        for (int i = 0; i < allAnnotations.size(); i++) {
-            if (allAnnotations.get(i).getAsJsonObject().get("recorded_timestamp") == null) {
-                annosWithMissingTimestamps.add(allAnnotations.get(i).getAsJsonObject());
-            }
-        }
-        return annosWithMissingTimestamps.toString();
-    }
+    //     for (int i = 0; i < allAnnotations.size(); i++) {
+    //         if (allAnnotations.get(i).getAsJsonObject().get("recorded_timestamp") == null) {
+    //             annosWithMissingTimestamps.add(allAnnotations.get(i).getAsJsonObject());
+    //         }
+    //     }
+    //     return annosWithMissingTimestamps.toString();
+    // }
 
 
-    private String getAnnotationsWithMissingAncillaryData(ServerRequest request) {
-        JsonObject allAnnotationData = getAnnotationData(request);
+    // private String getAnnotationsWithMissingAncillaryData(ServerRequest request) {
+    //     JsonObject allAnnotationData = getAnnotationData(request);
 
-        if (allAnnotationData == null) {
-            log.log(Level.WARNING, "Annotation Data empty - DataErrorService.getMissingTimestamps()");
-            return null;
-        }
-        JsonArray allAnnotations = getAnnotations(allAnnotationData);
-        JsonArray annotationsWithMissingData = new JsonArray();
+    //     if (allAnnotationData == null) {
+    //         log.log(Level.WARNING, "Annotation Data empty - DataErrorService.getMissingTimestamps()");
+    //         return null;
+    //     }
+    //     JsonArray allAnnotations = getAnnotations(allAnnotationData);
+    //     JsonArray annotationsWithMissingData = new JsonArray();
 
-        for (int i = 0; i < allAnnotations.size(); i++) {
-            if (allAnnotations.get(i).getAsJsonObject().get("ancillary_data") == null) {
-                annotationsWithMissingData.add(allAnnotations.get(i).getAsJsonObject());
-            }
-        }
-        return annotationsWithMissingData.toString();
-    }
+    //     for (int i = 0; i < allAnnotations.size(); i++) {
+    //         if (allAnnotations.get(i).getAsJsonObject().get("ancillary_data") == null) {
+    //             annotationsWithMissingData.add(allAnnotations.get(i).getAsJsonObject());
+    //         }
+    //     }
+    //     return annotationsWithMissingData.toString();
+    // }
 
     private String getCameraLogCoverageRatioOfDive(ServerRequest request, boolean isHd){
         String rovName = request.path().param("rov");

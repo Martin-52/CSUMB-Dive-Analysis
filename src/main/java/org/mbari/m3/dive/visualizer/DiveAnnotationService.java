@@ -39,14 +39,14 @@ public class DiveAnnotationService implements Service {
 
     @Override
     public void update(Routing.Rules rules) {
-        rules.get("/{rov}/{diveNumber}", (req, res) -> {
-            try {
-                utilities.headersRespondSend(getRovDiveAnnotations(req), res);
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        });
+        // rules.get("/{rov}/{diveNumber}", (req, res) -> {
+        //     try {
+        //         utilities.headersRespondSend(getRovDiveAnnotations(req), res);
+        //     } catch (IOException | InterruptedException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // });
 
         // rules.get("/testingcache/{rov}/{diveNumber}", (req, res) -> {
         //     try {
@@ -94,30 +94,30 @@ public class DiveAnnotationService implements Service {
      * @throws InterruptedException
      * @throws IOException
      */
-    private String getRovDiveAnnotations(ServerRequest request){
+    // private String getRovDiveAnnotations(ServerRequest request){
 
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+    //     String rovName = request.path().param("rov");
+    //     int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        SingletonCache cacheWrapper = SingletonCache.getInstance();
+    //     SingletonCache cacheWrapper = SingletonCache.getInstance();
 
-        annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
-            try {
-                return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                log.log(Level.WARNING, "Unable to set and get annotation data - DiveAnnotationService.getAnnotationData()");
+    //     annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
+    //         try {
+    //             return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
+    //         } catch (IOException | InterruptedException e) {
+    //             // TODO Auto-generated catch block
+    //             log.log(Level.WARNING, "Unable to set and get annotation data - DiveAnnotationService.getAnnotationData()");
                 
-                e.printStackTrace();
-            }
-            return new AnnotationData();
-        });
+    //             e.printStackTrace();
+    //         }
+    //         return new AnnotationData();
+    //     });
 
-        JsonObject allAnnotationData = annotationData.getData();
+    //     JsonObject allAnnotationData = annotationData.getData();
 
-        JsonObject linksAndAnnotations = getVidsAndAnnotations(allAnnotationData);
-        return linksAndAnnotations.toString();
-    }
+    //     JsonObject linksAndAnnotations = getVidsAndAnnotations(allAnnotationData);
+    //     return linksAndAnnotations.toString();
+    // }
 
 
     /**

@@ -42,7 +42,7 @@ import mbarix4j.math.Statlib;
 public class SingletonCache {
     // static variable single_instance of type Singleton 
     private static SingletonCache single_instance = null;
-    public Cache<String, AnnotationData> cache; 
+    public Cache<String, String> cache;
     
     private SingletonCache(){
         this.cache = Caffeine
@@ -59,10 +59,14 @@ public class SingletonCache {
         return single_instance;
     }
 
-    public String getData(String rovName, int diveNumber){
+    public String getData(String key){
         if(single_instance == null) return "no cache";
-        AnnotationData data = cache.getIfPresent(rovName+diveNumber);
+        String data = cache.getIfPresent(key);
         if(data == null) return "no AnnotationData";
-        return data.getData().toString();
+        return data;
+    }
+
+    public void setData(String key, String value) {
+        cache.put(key, value);
     }
 }

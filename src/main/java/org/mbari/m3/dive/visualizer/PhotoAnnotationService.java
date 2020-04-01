@@ -32,14 +32,14 @@ public class PhotoAnnotationService implements Service {
 
     @Override
     public void update(Routing.Rules rules) {
-        rules.get("/{rov}/{diveNumber}", (req, res) -> {
-            try {
-                utilities.headersRespondSend(getRovPhotoAnnotations(req), res); 
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        });
+        // rules.get("/{rov}/{diveNumber}", (req, res) -> {
+        //     try {
+        //         utilities.headersRespondSend(getRovPhotoAnnotations(req), res); 
+        //     } catch (IOException | InterruptedException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // });
 
     }
 
@@ -48,27 +48,27 @@ public class PhotoAnnotationService implements Service {
      * 
      * @param request
      */
-    private String getRovPhotoAnnotations(ServerRequest request){
+    // private String getRovPhotoAnnotations(ServerRequest request){
 
-        String rovName = request.path().param("rov");
-        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+    //     String rovName = request.path().param("rov");
+    //     int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        SingletonCache cacheWrapper = SingletonCache.getInstance();
+    //     SingletonCache cacheWrapper = SingletonCache.getInstance();
 
-        annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
-            try {
-                return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            return null;
-        });
+    //     annotationData = cacheWrapper.cache.get(rovName+diveNumber, k -> {
+    //         try {
+    //             return AnnotationData.get(annotationData.initializeAnnotationData(rovName, diveNumber));
+    //         } catch (IOException | InterruptedException e) {
+    //             // TODO Auto-generated catch block
+    //             e.printStackTrace();
+    //         }
+    //         return null;
+    //     });
 
-        JsonObject photoLinksAndAnnotations = getPhotoUrlsAndAnnotations(annotationData.getData());
+    //     JsonObject photoLinksAndAnnotations = getPhotoUrlsAndAnnotations(annotationData.getData());
 
-        return photoLinksAndAnnotations.toString();
-    }
+    //     return photoLinksAndAnnotations.toString();
+    // }
 
     private JsonArray getAnnotations(JsonObject allAnnotationData) {
         if (allAnnotationData.isJsonNull()) {
