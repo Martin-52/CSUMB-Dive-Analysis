@@ -1,66 +1,47 @@
 package org.mbari.m3.dive.visualizer;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
-import io.helidon.webserver.ServerResponse;
-import io.helidon.webserver.Service;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Map.Entry;
-import java.util.Set;
 import io.helidon.config.Config; 
 
 
 public class AnnotationData {
-    private final JsonObject annotationData;
-    private static int objectCounter = 0;
+    private final Logger log = Logger.getLogger(getClass().getName());
     Config config = Config.create();
 
-    AnnotationData(){
-        this.annotationData = new JsonObject();
+
+
+    public JsonObject getAnnotationDataFromCache(ServerRequest request){
+        String rovName = request.path().param("rov");
+        int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
+
+        SingletonCache cacheWrapper = SingletonCache.getInstance();
+
+        String data = cacheWrapper.cache.get("MBARIAnnotationData"+rovName+diveNumber, k -> {
+            try {
+                return initializeAnnotationData(rovName, diveNumber).toString();
+            } catch (IOException | InterruptedException e) {
+                // TODO Auto-generated catch block
+                log.log(Level.WARNING, "Unable to set and get annotation data - DiveAnnotationService.getAnnotationData()");
+                
+                e.printStackTrace();
+            }
+            return "{}";
+        });
+
+        return (new JsonParser().parse(data).getAsJsonObject());
     }
 
-    AnnotationData(JsonObject annotationData){
-        this.annotationData = annotationData;
-    }
 
-    AnnotationData(String rovName, int diveNumber) throws IOException, InterruptedException {
-        this.annotationData = initializeAnnotationData(rovName, diveNumber);
-    }
-
-    public static AnnotationData get(JsonObject data) {
-        objectCounter++;
-        return new AnnotationData(data);
-    }
-
-    public JsonObject getData(){
-        return this.annotationData;
-    }
-
-    public int getSize(){
-        return AnnotationData.objectCounter;
-    }
-
-    public JsonObject initializeAnnotationData(String rovName,int diveNumber) throws IOException, InterruptedException {
+    private JsonObject initializeAnnotationData(String rovName,int diveNumber) throws IOException, InterruptedException {
         final HttpClient httpClient = HttpClient
             .newBuilder()
             .version(HttpClient.Version.HTTP_2)
