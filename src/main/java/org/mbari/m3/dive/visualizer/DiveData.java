@@ -52,7 +52,7 @@ public class DiveData {
         key.append(rovName);
         key.append(Integer.toString(diveNum));
         String data = cache.getData(key.toString());
-        if (!data.equals("no AnnotationData")) {
+        if (data != null) {
             return data;
         } else {
             Dive dive = fetchDiveObject(rovName, diveNum);
@@ -109,7 +109,7 @@ public class DiveData {
 
         String data = cache.getData(key.toString());
 
-        if (!data.equals("no AnnotationData")) {
+        if (data != null) {
             return data;
         } else {
             Dive dive = fetchDiveObject(rovName, diveNum);
@@ -147,7 +147,7 @@ public class DiveData {
 
         String data = cache.getData(key.toString());
 
-        if (!data.equals("no AnnotationData")) {
+        if (data != null) {
             return data;
         } else { 
             Dive dive = fetchDiveObject(rovName, diveNum);
@@ -185,7 +185,7 @@ public class DiveData {
 
         String data = cache.getData(key.toString());
 
-        if (!data.equals("no AnnotationData")) {
+        if (data != null) {
             return data;
         } else { 
             Dive dive = fetchDiveObject(rovName, diveNum);
@@ -250,7 +250,7 @@ public class DiveData {
 
         String data = cache.getData(key.toString());
 
-        if (!data.equals("no AnnotationData")) {
+        if (data != null) {
             return data;
         } else { 
             Dive dive = fetchDiveObject(rovName, diveNum);
