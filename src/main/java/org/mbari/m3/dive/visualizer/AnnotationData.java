@@ -23,21 +23,30 @@ public class AnnotationData {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        SingletonCache cacheWrapper = SingletonCache.getInstance();
+        SingletonCache cache = SingletonCache.getInstance();
 
-        String data = cacheWrapper.cache.get("MBARIAnnotationData"+rovName+diveNumber, k -> {
+        StringBuilder key = new StringBuilder();
+        key.append("MBARIAnnotationData");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
+
+        String data = cache.getData(key.toString());
+
+        if(data != null) {
+            return (new JsonParser().parse(data).getAsJsonObject());
+        } else {
             try {
-                return initializeAnnotationData(rovName, diveNumber).toString();
+                data = initializeAnnotationData(rovName, diveNumber).toString();
+                cache.setData(key.toString(), data);
+                return (new JsonParser().parse(data).getAsJsonObject());
             } catch (IOException | InterruptedException e) {
                 // TODO Auto-generated catch block
                 log.log(Level.WARNING, "Unable to set and get annotation data - DiveAnnotationService.getAnnotationData()");
                 
                 e.printStackTrace();
             }
-            return "{}";
-        });
-
-        return (new JsonParser().parse(data).getAsJsonObject());
+            return new JsonObject();
+        }
     }
 
 

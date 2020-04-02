@@ -16,9 +16,22 @@ public class DiveService implements Service {
         rules.get("/getRovNames", (req, res) -> {
             try {
                 utilities.headersRespondSend(diveData.getRovNames(),res);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
             }
         });
 
@@ -27,9 +40,22 @@ public class DiveService implements Service {
                 utilities.headersRespondSend(diveData.getLatsAndLongs(
                     req.path().param("rov"),
                     Integer.parseInt(req.path().param("diveNumber"))), res);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
             }
         });
 
@@ -39,9 +65,22 @@ public class DiveService implements Service {
                     req.path().param("rov"),
                     Integer.parseInt(req.path().param("diveNumber"))), res);
                 
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
             }
         });
 
@@ -50,9 +89,22 @@ public class DiveService implements Service {
                 utilities.headersRespondSend(diveData.getMinAndDepth(                    
                     req.path().param("rov"),
                     Integer.parseInt(req.path().param("diveNumber"))), res);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
             }
         });
 
@@ -61,9 +113,22 @@ public class DiveService implements Service {
                 utilities.headersRespondSend(diveData.getHourAndDepth(                    
                     req.path().param("rov"),
                     Integer.parseInt(req.path().param("diveNumber"))), res);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
             }
         });
 
@@ -72,9 +137,22 @@ public class DiveService implements Service {
                 utilities.headersRespondSend(diveData.getDiveDates(                    
                     req.path().param("rov"),
                     Integer.parseInt(req.path().param("diveNumber"))), res);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
             }
         });
         rules.get("/getctd/{rov}/{diveNumber}", (req, res) -> {
@@ -82,9 +160,22 @@ public class DiveService implements Service {
                 utilities.headersRespondSend(diveData.getCTD(                    
                     req.path().param("rov"),
                     Integer.parseInt(req.path().param("diveNumber"))), res);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
             }
         });
     }

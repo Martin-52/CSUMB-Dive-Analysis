@@ -16,9 +16,22 @@ public class DiveAnnotationService implements Service {
         rules.get("/{rov}/{diveNumber}", (req, res) -> {
             try {
                 utilities.headersRespondSend(videoAnnotationFunctionality.getRovDiveAnnotations(req), res);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
             }
         });
 

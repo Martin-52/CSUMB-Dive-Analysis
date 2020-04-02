@@ -45,8 +45,6 @@ public class DiveData {
 
     public String getLatsAndLongs(String rovName, int diveNum) {
 
-        // If cache contains('LatsAndLongsVentana4061')
-            // Return cache.get('LatsAndLongsVentana4061')
         StringBuilder key = new StringBuilder();
         key.append("latsAndLongs");
         key.append(rovName);

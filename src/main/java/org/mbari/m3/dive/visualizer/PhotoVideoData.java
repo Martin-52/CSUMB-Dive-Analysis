@@ -25,12 +25,8 @@ import java.util.Set;
 public class PhotoVideoData {
     private final Logger log = Logger.getLogger(getClass().getName());
     AnnotationData annotationDataHelper = new AnnotationData();
+    SingletonCache cache = SingletonCache.getInstance();
     Utilities utilities = new Utilities();
-    Cache<String, AnnotationData> cache = Caffeine
-        .newBuilder()
-        .expireAfterWrite(1, TimeUnit.MINUTES)
-        .maximumSize(100)
-        .build();
 
 
     /**
@@ -42,28 +38,40 @@ public class PhotoVideoData {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        SingletonCache cacheWrapper = SingletonCache.getInstance();
-        String rovVideoLinksAnnotations = cacheWrapper.cache.get("VideoLinksAndAnnotations"+rovName+diveNumber, k -> {
-            JsonObject allAnnotationData = annotationDataHelper.getAnnotationDataFromCache(request);
-            return getVidsAndAnnotations(allAnnotationData).toString();
-        });
+        StringBuilder key = new StringBuilder();
+        key.append("VideoLinksAndAnnotations");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
 
-        return rovVideoLinksAnnotations;
+        String data = cache.getData(key.toString());
+        if(data != null){
+            return data;
+        } else {
+            JsonObject allAnnotationData = annotationDataHelper.getAnnotationDataFromCache(request);
+            data = getVidsAndAnnotations(allAnnotationData).toString();
+            cache.setData(key.toString(), data);
+            return data;
+        }
     }
 
     public String getRovPhotoAnnotations(ServerRequest request){
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        SingletonCache cacheWrapper = SingletonCache.getInstance();
-        
-        String rovPhotoLinksAnnotations = cacheWrapper.cache.get("PhotoLinksAndAnnotations"+rovName+diveNumber, k -> {
-        
-            JsonObject allAnnotationData = annotationDataHelper.getAnnotationDataFromCache(request);
-            return getPhotoUrlsAndAnnotations(allAnnotationData).toString();
-        });
+        StringBuilder key = new StringBuilder();
+        key.append("PhotoLinksAndAnnotations");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
 
-        return rovPhotoLinksAnnotations;
+        String data = cache.getData(key.toString());
+        if(data != null) {
+            return data;
+        } else {
+            JsonObject allAnnotationData = annotationDataHelper.getAnnotationDataFromCache(request);
+            data = getPhotoUrlsAndAnnotations(allAnnotationData).toString();
+            cache.setData(key.toString(), data);
+            return data;
+        }
     }
 
 

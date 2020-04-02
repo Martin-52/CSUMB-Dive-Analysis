@@ -34,12 +34,8 @@ import mbarix4j.math.Statlib;
 public class DataErrorData{
     private final Logger log = Logger.getLogger(getClass().getName());
     AnnotationData annotationDataHelper = new AnnotationData();
-    SingletonCache cacheWrapper = SingletonCache.getInstance();
-    Cache<String, AnnotationData> cache = Caffeine
-        .newBuilder()
-        .expireAfterWrite(1, TimeUnit.MINUTES)
-        .maximumSize(100)
-        .build();
+    SingletonCache cache = SingletonCache.getInstance();
+
 
     /**
      * Returns a JsonArray of all Annotations from specific dive
@@ -56,28 +52,36 @@ public class DataErrorData{
     public String getAnnotationsWithMissingTimestamps(ServerRequest request) {
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
-        
-        String annotationsWithMissingTimestamps = cacheWrapper.cache.get("AnnotationsWithMissingTimestamps"+rovName+diveNumber, k -> {
-            JsonObject allAnnotationData = annotationDataHelper.getAnnotationDataFromCache(request);
+
+        StringBuilder key = new StringBuilder();
+        key.append("AnnotationsWithMissingTimestamps");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
+        String data = cache.getData(key.toString());
+
+        if(data != null) {
+            return data;
+        } else {
+            JsonObject allAnnotationData =  annotationDataHelper.getAnnotationDataFromCache(request);
 
             if (allAnnotationData == null) {
                 log.log(Level.WARNING, "Annotation Data empty - DataErrorService.getMissingTimestamps()");
                 return "{}";
             }
-
+    
             JsonArray allAnnotations = getAnnotations(allAnnotationData);
             JsonArray annosWithMissingTimestamps = new JsonArray();
-
+    
             for (int i = 0; i < allAnnotations.size(); i++) {
                 if (allAnnotations.get(i).getAsJsonObject().get("recorded_timestamp") == null) {
                     annosWithMissingTimestamps.add(allAnnotations.get(i).getAsJsonObject());
                 }
             }
-
-            return annosWithMissingTimestamps.toString();  
-        });
-
-        return annotationsWithMissingTimestamps;
+    
+            data = annosWithMissingTimestamps.toString();
+            cache.setData(key.toString(), data);
+            return data;  
+        }
     }
 
 
@@ -85,7 +89,15 @@ public class DataErrorData{
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        String annotationsWithMissingAncillaryData = cacheWrapper.cache.get("AnnotationsWithMissingAncillaryData"+rovName+diveNumber, k -> {
+        StringBuilder key = new StringBuilder();
+        key.append("AnnotationsWithMissingAncillaryData");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
+        String data = cache.getData(key.toString());
+
+        if(data != null) {
+            return data;
+        } else {
             JsonObject allAnnotationData = annotationDataHelper.getAnnotationDataFromCache(request);
 
             if (allAnnotationData == null) {
@@ -100,17 +112,27 @@ public class DataErrorData{
                     annotationsWithMissingData.add(allAnnotations.get(i).getAsJsonObject());
                 }
             }
-            return annotationsWithMissingData.toString();
-        });
 
-        return annotationsWithMissingAncillaryData;
+            data = annotationsWithMissingData.toString();
+            cache.setData(key.toString(), data);
+            return data;
+        }
     }
 
     public String getCameraLogCoverageRatioOfDive(ServerRequest request, boolean isHd){
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        String camLogCoverage = cacheWrapper.cache.get("CameraLogCoverageRatioOfDiveisHD"+isHd+rovName+diveNumber, k -> {
+        StringBuilder key = new StringBuilder();
+        key.append("CameraLogCoverageRatioOfDiveisHD");
+        key.append(isHd);
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
+        String data = cache.getData(key.toString());
+
+        if(data != null) {
+            return data;
+        } else {
             DiveDAO dao = new DiveDAOImpl();
             // returns null if no match is found
             Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
@@ -140,10 +162,11 @@ public class DataErrorData{
             if(decimalPlaces>=2){
                 return df.format(coverageRatio);
             }
-            return Double.toString(coverageRatio);
-        });
 
-        return camLogCoverage;
+            data = Double.toString(coverageRatio);
+            cache.setData(key.toString(), data);
+            return data;
+        }
     }
 
     private double sampleIntervalCam(List<CameraDatum> samples) {
@@ -187,7 +210,15 @@ public class DataErrorData{
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        String ctdCoverageRatioOfDive = cacheWrapper.cache.get("CTDCoverageRatioOfDive"+rovName+diveNumber, k -> {
+        StringBuilder key = new StringBuilder();
+        key.append("CTDCoverageRatioOfDive");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
+        String data = cache.getData(key.toString());
+
+        if(data != null){
+            return data;
+        } else {
             DiveDAO dao = new DiveDAOImpl();
             // returns null if no match is found
             Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
@@ -218,11 +249,11 @@ public class DataErrorData{
             if(decimalPlaces>=2){
                 return df.format(coverageRatio);
             }
-            return Double.toString(coverageRatio);
 
-        });
-
-        return ctdCoverageRatioOfDive;
+            data = Double.toString(coverageRatio);
+            cache.setData(key.toString(), data);
+            return data;
+        }
     }
 
     private double sampleIntervalCTD(List<CtdDatum> samples) {
@@ -267,7 +298,16 @@ public class DataErrorData{
         String rovName = request.path().param("rov");
         int diveNumber = Integer.parseInt(request.path().param("diveNumber"));
 
-        String navCoverageRatioOfDive = cacheWrapper.cache.get("NavCoverageRatioOfDive"+rovName+diveNumber, k ->{
+
+        StringBuilder key = new StringBuilder();
+        key.append("NavCoverageRatioOfDive");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
+        String data = cache.getData(key.toString());
+
+        if(data != null){
+            return data;
+        } else {
             DiveDAO dao = new DiveDAOImpl();
             // findBy...() returns null if not found
             Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
@@ -298,9 +338,11 @@ public class DataErrorData{
             if(decimalPlaces>=2){
                 return df.format(coverageRatio);
             }
-            return Double.toString(coverageRatio);
-        });
-        return navCoverageRatioOfDive;
+
+            data = Double.toString(coverageRatio);
+            cache.setData(key.toString(), data);
+            return data;
+        }
     }
 
     private double sampleIntervalNav(List<NavigationDatum> samples) {
