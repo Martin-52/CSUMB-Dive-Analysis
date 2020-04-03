@@ -29,6 +29,32 @@ public class DiveData {
         log = Logger.getLogger(getClass().getName());
     }
 
+    public String getGeneralDiveInformation(String rovName, int diveNumber){
+        StringBuilder key = new StringBuilder();
+        key.append("GeneralDiveInformation");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
+        String data = cache.getData(key.toString());
+        if(data != null){
+            return data;
+        } else {
+
+            DiveDAO dao = new DiveDAOImpl();
+            Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
+            JsonObject diveInformation = new JsonObject();
+            diveInformation.addProperty("chiefScientist", dive.getChiefScientist());
+            diveInformation.addProperty("briefAccomplishments", dive.getBriefAccomplishments());
+            diveInformation.addProperty("startDate", dive.getStartDate().toString());
+            diveInformation.addProperty("latitude", dive.getLatitude().toString());
+            diveInformation.addProperty("longitude", dive.getLongitude().toString());
+            diveInformation.addProperty("rovName", dive.getRovName());
+            diveInformation.addProperty("diveNumber", Integer.toString(dive.getDiveNumber()));
+            data = diveInformation.toString();
+            cache.setData(key.toString(), data);
+            return data;
+        }
+    }
+
     /**
      * Returns a list of ROV names.
      * @param request
