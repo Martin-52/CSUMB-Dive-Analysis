@@ -3,9 +3,6 @@ package org.mbari.m3.dive.visualizer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.LogManager;
-
-import com.google.common.collect.ImmutableBiMap.Builder;
-
 import io.helidon.config.Config;
 import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerConfiguration;
@@ -54,6 +51,7 @@ public final class Main {
                 ServerConfiguration.create(config.get("server"));
 
         WebServer server = WebServer.create(serverConfig, createRouting(config));
+
         // Try to start the server. If successful, print some info and arrange to
         // print a message at shutdown. If unsuccessful, print the exception.
         server.start()
