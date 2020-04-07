@@ -45,6 +45,7 @@ public class DiveData {
             diveInformation.addProperty("chiefScientist", dive.getChiefScientist());
             diveInformation.addProperty("briefAccomplishments", dive.getBriefAccomplishments());
             diveInformation.addProperty("startDate", dive.getStartDate().toString());
+            diveInformation.addProperty("endDate", dive.getEndDate().toString());
             diveInformation.addProperty("latitude", dive.getLatitude().toString());
             diveInformation.addProperty("longitude", dive.getLongitude().toString());
             diveInformation.addProperty("rovName", dive.getRovName());
