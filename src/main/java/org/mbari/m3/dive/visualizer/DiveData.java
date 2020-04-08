@@ -38,7 +38,6 @@ public class DiveData {
         if(data != null){
             return data;
         } else {
-
             DiveDAO dao = new DiveDAOImpl();
             Dive dive = dao.findByPlatformAndDiveNumber(rovName, diveNumber);
             JsonObject diveInformation = new JsonObject();

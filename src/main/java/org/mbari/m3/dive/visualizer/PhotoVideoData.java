@@ -6,6 +6,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.helidon.webserver.ServerRequest;
+
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -243,8 +245,9 @@ public class PhotoVideoData {
             if(!annotationUUIDSet.contains(curObsUUID)){
                 if(curTimestamp <= endTime && curTimestamp >= startTime 
                     || video_reference_uuid.equals(curVidRefUUID)){
-
-                    videoAnnotations.add(allAnnotations.get(i).getAsJsonObject());
+                    JsonObject temp = allAnnotations.get(i).getAsJsonObject();
+                    temp = roundAncillaryDataToThousandths(temp);
+                    videoAnnotations.add(temp);
                     annotationUUIDSet.add(curObsUUID);
                 }
             }
@@ -395,6 +398,7 @@ public class PhotoVideoData {
                             jpgPhotoUrlsMap.get(photoUrl).getAsJsonObject().add("annotations", new JsonArray());
                         }
                         JsonObject newAnnotation = annotations.get(i).getAsJsonObject();
+                        newAnnotation = roundAncillaryDataToThousandths(newAnnotation);
                         jpgPhotoUrlsMap.get(photoUrl).getAsJsonObject().get("annotations").getAsJsonArray().add(newAnnotation);                            
                     }
                 }
@@ -405,6 +409,7 @@ public class PhotoVideoData {
         for (Entry<String, JsonElement> entry : jpgPhotoUrlsMap.entrySet()) {
             JsonArray orderedAnnotations = new JsonArray();
             orderedAnnotations = sortAnnotationArray(entry.getValue().getAsJsonObject().get("annotations").getAsJsonArray());
+
             entry.getValue().getAsJsonObject().add("annotations", orderedAnnotations);
         }
 
@@ -503,6 +508,39 @@ public class PhotoVideoData {
             jsonArray.add(mapping.get(i).get("link"));
         }
         return jsonArray;
+    }
+
+    private JsonObject roundAncillaryDataToThousandths(JsonObject annotation) {
+        if(annotation.get("ancillary_data") == null){ return annotation; }
+
+        double depth = 0.0;
+        double oxygen = 0.0;
+        double salinity = 0.0;
+        if(annotation.get("ancillary_data").getAsJsonObject().get("depth_meters") != null ){
+            depth = roundToThousands(annotation.get("ancillary_data").getAsJsonObject().get("depth_meters").getAsDouble());
+            annotation.get("ancillary_data").getAsJsonObject().addProperty("depth_meters", depth);
+        }
+        if(annotation.get("ancillary_data").getAsJsonObject().get("oxygen_ml_l") != null ){
+            oxygen = roundToThousands(annotation.get("ancillary_data").getAsJsonObject().get("oxygen_ml_l").getAsDouble());
+            annotation.get("ancillary_data").getAsJsonObject().addProperty("oxygen_ml_l", oxygen);
+        }
+        if(annotation.get("ancillary_data").getAsJsonObject().get("salinity") != null ){
+            salinity = roundToThousands(annotation.get("ancillary_data").getAsJsonObject().get("salinity").getAsDouble());
+            annotation.get("ancillary_data").getAsJsonObject().addProperty("salinity", salinity);
+        }
+
+        return annotation;
+    }
+
+    private double roundToThousands(double data) {
+        DecimalFormat df = new DecimalFormat("#.000");
+        String text = Double.toString(data);
+        int integerPlaces = text.indexOf('.');
+        int decimalPlaces = text.length() - integerPlaces - 1;
+        if(decimalPlaces>=2){
+            return Double.parseDouble(df.format(data));
+        }
+        return data;
     }
 
 }
