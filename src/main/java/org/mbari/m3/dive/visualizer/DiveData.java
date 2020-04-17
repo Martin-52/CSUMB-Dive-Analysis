@@ -294,6 +294,7 @@ public class DiveData {
                 ctdObject.addProperty("salinity", ctd.get(i).getSalinity());
                 ctdObject.addProperty("pressure", ctd.get(i).getPressure());
                 ctdObject.addProperty("temperature", ctd.get(i).getTemperature());
+                ctdObject.addProperty("oxygen", ctd.get(i).getOxygen());
                 ctdArray.add(ctdObject);
             }
     
