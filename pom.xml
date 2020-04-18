@@ -60,7 +60,7 @@
         <dependency>
         	<groupId>org.mbari</groupId>
         	<artifactId>expd-jdbc</artifactId>
-        	<version>1.5.3.jre11</version>
+        	<version>1.6.0.jre11</version>
         </dependency>
 	<dependency>
 		<groupId>com.googlecode.json-simple</groupId>

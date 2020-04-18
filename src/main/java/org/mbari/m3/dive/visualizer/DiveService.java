@@ -35,6 +35,30 @@ public class DiveService implements Service {
             }
         });
 
+        rules.get("/getLabnotes/{rov}/{diveNumber}", (req, res) -> {
+            try {
+                utilities.headersRespondSend(diveData.getLabNotes(
+                    req.path().param("rov"),
+                    Integer.parseInt(req.path().param("diveNumber"))), res);
+            } catch (IOException e ){
+                Routing routing = Routing.builder()
+                .error(IOException.class, (req1, res1, ex) -> { 
+                    // handle the error, set the HTTP status code
+                    res.send(ex.getMessage()); 
+                })
+                .build();
+            } catch ( InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                Routing routing = Routing.builder()
+                    .error(InterruptedException.class, (req1, res1, ex) -> { 
+                        // handle the error, set the HTTP status code
+                        res.send(ex.getMessage()); 
+                    })
+                    .build();
+            }
+        });
+
         rules.get("/getlatsandlongs/{rov}/{diveNumber}", (req, res) -> {
             try {
                 utilities.headersRespondSend(diveData.getLatsAndLongs(

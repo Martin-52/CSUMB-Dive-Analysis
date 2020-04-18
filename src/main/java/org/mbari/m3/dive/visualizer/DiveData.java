@@ -9,10 +9,13 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.mbari.expd.AnnotationSummary;
 import org.mbari.expd.CtdDatum;
 import org.mbari.expd.CtdDatumDAO;
 import org.mbari.expd.Dive;
 import org.mbari.expd.DiveDAO;
+import org.mbari.expd.jdbc.AnnotationSummaryDAOImpl;
+import org.mbari.expd.jdbc.AnnotationSummaryImpl;
 import org.mbari.expd.jdbc.BaseDAOImpl;
 import org.mbari.expd.jdbc.CtdDatumDAOImpl;
 import org.mbari.expd.jdbc.DiveDAOImpl;
@@ -27,6 +30,45 @@ public class DiveData {
     public DiveData() {
         cache = SingletonCache.getInstance();
         log = Logger.getLogger(getClass().getName());
+    }
+
+    public String getLabNotes(String rovName, int diveNumber) {
+        StringBuilder key = new StringBuilder();
+        key.append("labNotes");
+        key.append(rovName);
+        key.append(Integer.toString(diveNumber));
+        String data = cache.getData(key.toString());
+
+        if (data == null) {
+            AnnotationSummaryDAOImpl dao = new AnnotationSummaryDAOImpl();
+            AnnotationSummary summary = dao.findByDive(rovName, diveNumber);
+    
+            JsonObject labNotes = new JsonObject();
+    
+            labNotes.addProperty("annotators", summary.getAnnotators());
+            labNotes.addProperty("application", summary.getApplication());
+            labNotes.addProperty("camera", summary.getCamera());
+            if (summary.getDateAnnotated() != null) {
+                labNotes.addProperty("dateAnnotated", summary.getDateAnnotated().toString());
+            } else {
+                labNotes.addProperty("dateAnnotated", "N/A");
+            }
+            labNotes.addProperty("diveNumber", summary.getDiveNumber());
+            labNotes.addProperty("highDefTapeCount", summary.getHighDefTapeCount());
+            labNotes.addProperty("hoursAnnotated", summary.getHoursAnnotated());
+            labNotes.addProperty("hoursOfVideo", summary.getHoursOfVideo());
+            labNotes.addProperty("mission", summary.getMission());
+            labNotes.addProperty("notes", summary.getNotes());
+            labNotes.addProperty("rovName", summary.getRovName());
+            labNotes.addProperty("standardDefTapeCount", summary.getStandardDefTapeCount());
+            labNotes.addProperty("style", summary.getStyle());
+            labNotes.addProperty("videoSegmentCount", summary.getVideoSegmentCount());
+    
+            data = labNotes.toString();
+            cache.setData(key.toString(), data);
+        }
+
+        return data;
     }
 
     public String getGeneralDiveInformation(String rovName, int diveNumber){
