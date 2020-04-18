@@ -13,7 +13,7 @@ public class SingletonCache {
     private SingletonCache(){
         this.cache = Caffeine
             .newBuilder()
-            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .expireAfterWrite(30, TimeUnit.MINUTES)
             .maximumSize(100)
             .build();
     }
